@@ -67,8 +67,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
                 <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5 leading-none">
                   WorkVista
                 </h1>
-                <p className="text-[10px] tracking-wider text-slate-400 font-medium uppercase mt-1 truncate">
-                  AI-Powered Workforce Intelligence
+                <p className="text-[10px] tracking-wide text-slate-400 font-medium mt-1">
+                  Workforce Intelligence
                 </p>
               </div>
             )}

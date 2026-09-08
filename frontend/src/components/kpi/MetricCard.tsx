@@ -84,6 +84,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({ type, data, onClick, onM
     return `${x},${y}`;
   }).join(' ');
 
+  // Sanitize subtitle to avoid repeating percentage e.g. "45.2% 45.2% of workforce"
+  const cleanSubtitle = subtitle.replace(/^\d+(\.\d+)?%\s*/, '');
+
   return (
     <div 
       onClick={onClick}
@@ -91,8 +94,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({ type, data, onClick, onM
     >
       {/* Top row: Icon + Title + Maximize */}
       <div className="flex items-center justify-between mb-2">
-        <div className={`w-9 h-9 rounded-xl ${config.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
-          <Icon className="w-4.5 h-4.5" />
+        <div className={`w-8 h-8 rounded-xl ${config.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
+          <Icon className="w-4 h-4" />
         </div>
         {onMaximize && (
           <button
@@ -132,24 +135,27 @@ export const MetricCard: React.FC<MetricCardProps> = ({ type, data, onClick, onM
       </div>
 
       {/* Subtitle & Trend */}
-      <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-100 text-[11px]">
+      <div className="flex items-center justify-between gap-1.5 mt-2.5 pt-2 border-t border-slate-100 text-[11px]">
         {trend === 'up' && (
-          <span className="flex items-center gap-0.5 font-bold text-emerald-600">
-            <ArrowUp className="w-3 h-3" />
+          <span className="inline-flex items-center gap-0.5 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+            <ArrowUp className="w-2.5 h-2.5" />
             <span>{changePct > 0 ? `${changePct}%` : '4.2%'}</span>
           </span>
         )}
         {trend === 'down' && (
-          <span className="flex items-center gap-0.5 font-bold text-rose-600">
-            <ArrowDown className="w-3 h-3" />
+          <span className="inline-flex items-center gap-0.5 font-bold text-rose-700 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+            <ArrowDown className="w-2.5 h-2.5" />
             <span>{changePct > 0 ? `${changePct}%` : '20.0%'}</span>
           </span>
         )}
         {trend === 'neutral' && (
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5 shrink-0" />
+          <span className="inline-flex items-center gap-1 font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span>Active</span>
+          </span>
         )}
-        <span className="text-slate-400 truncate">
-          {subtitle}
+        <span className="text-slate-400 text-[10px] font-medium truncate text-right">
+          {cleanSubtitle}
         </span>
       </div>
     </div>

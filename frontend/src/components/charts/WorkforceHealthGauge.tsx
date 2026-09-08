@@ -115,54 +115,31 @@ export const WorkforceHealthGauge: React.FC<WorkforceHealthGaugeProps> = ({ data
         </div>
       </div>
 
-      {/* Breakdown List */}
-      <div className="space-y-2 pt-2 border-t border-slate-100 mt-2">
-        {/* Productivity */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>Productivity</span>
-          </span>
-          <span className="font-bold text-slate-800">{breakdown.productivity}%</span>
-        </div>
-
-        {/* Engagement */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-            <span>Engagement</span>
-          </span>
-          <span className="font-bold text-slate-800">{breakdown.engagement}%</span>
-        </div>
-
-        {/* Attendance */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-            <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
-            <span>Attendance</span>
-          </span>
-          <span className="font-bold text-slate-800">{breakdown.attendance}%</span>
-        </div>
-
-        {/* Workload Balance */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-            <span>Workload Balance</span>
-          </span>
-          <span className="font-bold text-slate-800">{breakdown.workload_balance}%</span>
-        </div>
-
-        {/* Risk Level */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-            <span>Risk Level</span>
-          </span>
-          <span className="font-bold text-slate-800">
-            {breakdown.risk_level_pct}% ({breakdown.risk_level_label})
-          </span>
-        </div>
+      {/* Breakdown List with Progress Bars */}
+      <div className="space-y-2.5 pt-3 border-t border-slate-100">
+        {[
+          { label: 'Productivity Index', val: breakdown.productivity, color: 'bg-emerald-500' },
+          { label: 'Engagement Level', val: breakdown.engagement, color: 'bg-blue-500' },
+          { label: 'Attendance Rate', val: breakdown.attendance, color: 'bg-purple-500' },
+          { label: 'Workload Balance', val: breakdown.workload_balance, color: 'bg-indigo-500' },
+          { label: 'Retention Stability', val: Number((100 - breakdown.risk_level_pct).toFixed(1)), color: 'bg-teal-500' },
+        ].map(item => (
+          <div key={item.label} className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-slate-600 text-[11px] font-medium">
+                <span className={`w-1.5 h-1.5 rounded-full ${item.color} shrink-0`} />
+                <span>{item.label}</span>
+              </span>
+              <span className="font-bold text-slate-800 text-[11px]">{item.val}%</span>
+            </div>
+            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${item.color} rounded-full transition-all duration-500`} 
+                style={{ width: `${Math.min(100, Math.max(0, item.val))}%` }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

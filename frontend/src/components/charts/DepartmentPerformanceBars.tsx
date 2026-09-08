@@ -98,7 +98,7 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
       {/* Bar Chart with labels on bars */}
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 15, right: 10, left: -20, bottom: 0 }} barGap={3}>
+          <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }} barGap={3}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
             <XAxis 
               dataKey="department" 
@@ -107,7 +107,7 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
               tick={{ fontSize: 10, fill: '#64748B' }} 
             />
             <YAxis 
-              domain={[0, 100]} 
+              domain={[0, 105]} 
               tickLine={false} 
               axisLine={false} 
               tick={{ fontSize: 10, fill: '#64748B' }}
@@ -117,7 +117,7 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
             <Bar dataKey="actual" fill="#3B82F6" radius={[4, 4, 0, 0]}>
               <LabelList dataKey="actual" position="top" fill="#1E293B" fontSize={10} fontWeight="bold" />
             </Bar>
-            <Bar dataKey="predicted" fill="#A855F7" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="predicted" fill="#8B5CF6" radius={[4, 4, 0, 0]}>
               <LabelList dataKey="predicted" position="top" fill="#6B21A8" fontSize={10} fontWeight="bold" />
             </Bar>
           </BarChart>

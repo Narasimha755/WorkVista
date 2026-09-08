@@ -133,7 +133,9 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
                 <Cell 
                   key={`cell-${index}`} 
                   fill={getColor(entry.risk_level, entry.risk_score)} 
-                  className="hover:scale-125 transition-transform origin-center cursor-pointer"
+                  stroke="#FFFFFF"
+                  strokeWidth={1.5}
+                  className="hover:scale-150 transition-all origin-center cursor-pointer shadow-sm"
                 />
               ))}
             </Scatter>

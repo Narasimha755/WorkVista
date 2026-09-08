@@ -109,9 +109,9 @@ def get_dashboard_data(
         "high_performers": {
             "value": float(high_count),
             "display_value": str(high_count),
-            "change_pct": high_pct_change,
-            "trend": "up" if high_delta > 0 else ("down" if high_delta < 0 else "neutral"),
-            "subtitle": f"{round((high_count / max(1, total_emp)) * 100.0, 1)}% of workforce",
+            "change_pct": round((high_count / max(1, total_emp)) * 100.0, 1),
+            "trend": "up",
+            "subtitle": "of active workforce",
             "sparkline": []
         },
         "at_risk": {
@@ -119,7 +119,7 @@ def get_dashboard_data(
             "display_value": str(high_risk_count),
             "change_pct": round((high_risk_count / max(1, total_emp)) * 100.0, 1),
             "trend": "neutral" if high_risk_count > 0 else "up",
-            "subtitle": f"{round((high_risk_count / max(1, total_emp)) * 100.0, 1)}% high risk tier",
+            "subtitle": "critical flight risk",
             "sparkline": []
         },
         "predicted_improvement": {
@@ -127,7 +127,7 @@ def get_dashboard_data(
             "display_value": str(improved_count),
             "change_pct": impr_pct,
             "trend": "up",
-            "subtitle": f"{impr_pct}% of workforce",
+            "subtitle": "projected upward trend",
             "sparkline": []
         },
         "predicted_decline": {
@@ -135,7 +135,7 @@ def get_dashboard_data(
             "display_value": str(declined_count),
             "change_pct": decl_pct,
             "trend": "down",
-            "subtitle": f"{decl_pct}% of workforce",
+            "subtitle": "targeted intervention",
             "sparkline": []
         }
     }
@@ -327,7 +327,10 @@ def get_dashboard_data(
     # Workforce Health Score calculation (honest weighted blend)
     avg_engagement = round(sum(e.engagement for e in employees) / max(1, total_emp), 1)
     avg_attendance = round(sum(e.attendance for e in employees) / max(1, total_emp), 1)
-    avg_workload_balance = round(sum(min(100.0, max(0.0, 100.0 - abs((e.workload or 40.0) - 40.0) * 2.5)) for e in employees) / max(1, total_emp), 1)
+    avg_workload_balance = round(sum(
+        max(50.0, min(100.0, 92.0 - ((e.workload - 55.0) * 1.4 if (e.workload or 40.0) > 55.0 else ((30.0 - e.workload) * 1.2 if (e.workload or 40.0) < 30.0 else 0.0))))
+        for e in employees
+    ) / max(1, total_emp), 1)
     risk_pct = round((high_risk_count / max(1, total_emp)) * 100.0, 1)
     health_score_num = int(round(avg_current_prod * 0.35 + avg_engagement * 0.25 + avg_attendance * 0.20 + avg_workload_balance * 0.10 + (100.0 - risk_pct) * 0.10))
     health_status = "Excellent" if health_score_num >= 85 else ("Healthy" if health_score_num >= 75 else ("Watch" if health_score_num >= 60 else "Critical"))

@@ -56,8 +56,8 @@ export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDon
                 data={chartData}
                 dataKey="count"
                 nameKey="name"
-                innerRadius={55}
-                outerRadius={75}
+                innerRadius={50}
+                outerRadius={70}
                 paddingAngle={3}
                 startAngle={90}
                 endAngle={-270}
@@ -87,34 +87,34 @@ export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDon
 
           {/* Absolute Center Content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            <span className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none">
               {totalCount}
             </span>
-            <span className="text-[11px] font-medium text-slate-400">
+            <span className="text-[11px] font-medium text-slate-400 mt-0.5">
               Employees
             </span>
           </div>
         </div>
 
         {/* Right Legend Items */}
-        <div className="flex-1 space-y-3 pl-2">
+        <div className="flex-1 space-y-2.5 pl-1">
           {chartData.map((item) => (
-            <div key={item.name} className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
+            <div key={item.name} className="flex items-center justify-between text-xs py-0.5">
+              <div className="flex items-center gap-2 min-w-0">
                 <span 
-                  className="w-3 h-3 rounded-full shrink-0" 
+                  className="w-2.5 h-2.5 rounded-full shrink-0" 
                   style={{ backgroundColor: item.color }} 
                 />
-                <div>
-                  <div className="font-semibold text-slate-800">
+                <div className="min-w-0">
+                  <div className="font-semibold text-slate-800 text-[11px] truncate">
                     {item.name}
                   </div>
-                  <div className="text-[11px] text-slate-400">
-                    {item.count} employees
+                  <div className="text-[10px] text-slate-400">
+                    {item.count} staff
                   </div>
                 </div>
               </div>
-              <span className="font-bold text-slate-700 text-sm">
+              <span className="font-bold text-slate-800 text-xs shrink-0 ml-2">
                 {item.percentage}%
               </span>
             </div>
@@ -122,9 +122,9 @@ export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDon
         </div>
       </div>
 
-      <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-400">
-        <span>Forecast Horizon: Next 30 Days</span>
-        <span className="text-blue-600 font-medium cursor-pointer hover:underline">Customize Thresholds</span>
+      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <span>Horizon: <span className="font-semibold text-slate-600">Next 30 Days</span></span>
+        <span className="text-blue-600 font-semibold cursor-pointer hover:underline">Customize</span>
       </div>
     </div>
   );

@@ -188,7 +188,7 @@ class DynamicStore {
         display_value: String(highPerformers), 
         change_pct: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), 
         trend: 'up' as const, 
-        subtitle: `${Number(((highPerformers / (total || 1)) * 100).toFixed(1))}% of workforce`, 
+        subtitle: `of active workforce`, 
         sparkline: [38, 40, 41, 42, 42.3] 
       },
       at_risk: { 
@@ -196,7 +196,7 @@ class DynamicStore {
         display_value: String(atRisk), 
         change_pct: Number(((atRisk / (total || 1)) * 100).toFixed(1)), 
         trend: atRisk > 10 ? 'down' as const : 'neutral' as const, 
-        subtitle: `${Number(((atRisk / (total || 1)) * 100).toFixed(1))}% high risk tier`, 
+        subtitle: `critical flight risk`, 
         sparkline: [12, 10, 9, 8.5] 
       },
       predicted_improvement: {
@@ -204,7 +204,7 @@ class DynamicStore {
         display_value: String(activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) > e.productivity_score).length),
         change_pct: Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) > e.productivity_score).length / (total || 1)) * 100).toFixed(1)),
         trend: 'up' as const,
-        subtitle: `${Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) > e.productivity_score).length / (total || 1)) * 100).toFixed(1))}% of workforce`,
+        subtitle: `projected upward trend`,
         sparkline: [95, 102, 108, 112]
       },
       predicted_decline: {
@@ -212,7 +212,7 @@ class DynamicStore {
         display_value: String(activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score).length),
         change_pct: Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score).length / (total || 1)) * 100).toFixed(1)),
         trend: 'down' as const,
-        subtitle: `${Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score).length / (total || 1)) * 100).toFixed(1))}% of workforce`,
+        subtitle: `targeted intervention`,
         sparkline: [48, 42, 38, 36]
       }
     };
@@ -339,7 +339,11 @@ class DynamicStore {
     // 4. Workforce Health Score
     const avgEng = Number((activeEmployees.reduce((a, e) => a + (e.engagement || 75), 0) / (total || 1)).toFixed(1));
     const avgAtt = Number((activeEmployees.reduce((a, e) => a + (e.attendance || 90), 0) / (total || 1)).toFixed(1));
-    const avgWlBal = Number((activeEmployees.reduce((a, e) => a + Math.min(100, Math.max(0, 100 - Math.abs((e.workload || 40) - 40) * 2.5)), 0) / (total || 1)).toFixed(1));
+    const avgWlBal = Number((activeEmployees.reduce((a, e) => {
+      const wl = e.workload || 40;
+      const dev = wl > 55 ? (wl - 55) * 1.4 : wl < 30 ? (30 - wl) * 1.2 : 0;
+      return a + Math.max(50, Math.min(100, 92 - dev));
+    }, 0) / (total || 1)).toFixed(1));
     const riskPct = Number(((atRisk / (total || 1)) * 100).toFixed(1));
     const healthNum = Math.round(avgProd * 0.35 + avgEng * 0.25 + avgAtt * 0.20 + avgWlBal * 0.10 + (100 - riskPct) * 0.10);
     const healthStatus = healthNum >= 85 ? 'Excellent' : healthNum >= 75 ? 'Healthy' : healthNum >= 60 ? 'Watch' : 'Critical';
