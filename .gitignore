@@ -1,0 +1,54 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Environment variables
+.env
+.env.local
+
+# Backend Runtime Data
+backend/data/models/*.joblib
+backend/data/uploads/*
+backend/data/reports/*
+backend/data/*.db
+backend/data/*.sqlite
+backend/data/*.sqlite3
+backend/.pytest_cache/
+
+# Keep data directories intact
+!backend/data/models/.gitkeep
+!backend/data/uploads/.gitkeep
+!backend/data/reports/.gitkeep
+!backend/data/sample_custom_workforce.csv
+
+# Frontend Dependencies & Logs
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+*.log
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace

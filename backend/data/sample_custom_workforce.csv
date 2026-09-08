@@ -1,0 +1,13 @@
+emp_id,worker_name,dept,job_title,exp_years,attendance_score,task_load,weekly_hours,satisfaction,skill_proficiency,num_projects,tasks_done,on_time_delivery,past_productivity,work_output,rating
+E-101,Sophia Davis,Engineering,Senior Software Engineer,6.5,96.0,72.0,40.0,85.0,92.0,4,36,94.0,88.0,91.0,High
+E-102,Lucas Martinez,Marketing,Growth Specialist,3.0,88.0,84.0,46.0,72.0,75.0,5,28,82.0,74.0,76.0,Medium
+E-103,Elena Rostova,Finance,Risk Auditor,5.0,91.0,68.0,39.0,78.0,84.0,3,25,89.0,78.0,80.0,High
+E-104,Chen Wei,Operations,Operations Manager,8.0,94.0,89.0,48.0,62.0,80.0,6,42,78.0,70.0,67.0,Medium
+E-105,Marcus Thorne,HR,People Partner,4.0,98.0,65.0,38.0,88.0,78.0,2,22,95.0,82.0,86.0,High
+E-106,Aisha Khan,Sales,Account Executive,4.5,82.0,92.0,50.0,55.0,72.0,5,38,70.0,65.0,60.0,Medium
+E-107,David Kim,Engineering,DevOps Lead,7.0,95.0,74.0,41.0,86.0,94.0,4,35,92.0,89.0,92.0,High
+E-108,Maya Lin,Marketing,Content Strategist,2.5,92.0,70.0,40.0,80.0,76.0,3,26,88.0,76.0,78.0,Medium
+E-109,Carlos Mendez,Operations,Supply Chain Analyst,3.5,86.0,88.0,45.0,64.0,70.0,4,30,76.0,68.0,65.0,Medium
+E-110,Fatima Zahra,Finance,Financial Analyst,4.0,94.0,76.0,40.0,82.0,82.0,3,27,91.0,80.0,83.0,High
+E-111,Alexander Silva,Sales,SDR Lead,1.5,78.0,86.0,44.0,60.0,68.0,4,29,72.0,62.0,58.0,Medium
+E-112,Amara Kowalski,HR,Talent Acquisition,5.5,96.0,66.0,39.0,84.0,80.0,3,24,94.0,81.0,85.0,High
