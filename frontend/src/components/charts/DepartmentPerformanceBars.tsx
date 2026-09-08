@@ -12,6 +12,8 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
   data = [],
   onMaximize
 }) => {
+  const [filterMode, setFilterMode] = React.useState<'all' | 'top' | 'growth'>('all');
+
   // Default values matching mockup if not loaded
   const defaultDepts = [
     { department: 'Engineering', actual: 88, predicted: 92 },
@@ -22,7 +24,18 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
     { department: 'Sales', actual: 72, predicted: 78 }
   ];
 
-  const chartData = data && data.length > 0 ? data : defaultDepts;
+  const rawData = data && data.length > 0 ? data : defaultDepts;
+
+  const chartData = React.useMemo(() => {
+    const list = [...rawData];
+    if (filterMode === 'top') {
+      return list.sort((a, b) => b.actual - a.actual);
+    }
+    if (filterMode === 'growth') {
+      return list.sort((a, b) => (b.predicted - b.actual) - (a.predicted - a.actual));
+    }
+    return list;
+  }, [rawData, filterMode]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -71,14 +84,48 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {/* In-Card Sorting Filter */}
+          <div className="hidden sm:flex items-center p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold text-slate-600">
+            <button
+              onClick={() => setFilterMode('all')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                filterMode === 'all'
+                  ? 'bg-blue-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterMode('top')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                filterMode === 'top'
+                  ? 'bg-blue-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Top Output
+            </button>
+            <button
+              onClick={() => setFilterMode('growth')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                filterMode === 'growth'
+                  ? 'bg-blue-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Growth Gap
+            </button>
+          </div>
+
           <div className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" />
+              <span className="w-2 h-2 rounded-sm bg-blue-600" />
               <span>Actual</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-purple-600" />
+              <span className="w-2 h-2 rounded-sm bg-purple-600" />
               <span>Predicted</span>
             </span>
           </div>

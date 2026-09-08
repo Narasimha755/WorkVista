@@ -14,6 +14,8 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
   onViewEmployee,
   onMaximize
 }) => {
+  const [filterMode, setFilterMode] = React.useState<'all' | 'high_risk' | 'safe_stars'>('all');
+
   // If no data supplied, generate a realistic distributed sample from workforce
   const points = data.length > 0 ? data : [
     { id: 1, employee_id: 'EMP-1001', employee_name: 'Rahul Sharma', department: 'Engineering', productivity: 88, risk_score: 12, risk_level: 'Low', predicted: 92 },
@@ -23,6 +25,16 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
     { id: 5, employee_id: 'EMP-1005', employee_name: 'Vikram Singh', department: 'Operations', productivity: 69, risk_score: 38, risk_level: 'Moderate', predicted: 72 },
     { id: 6, employee_id: 'EMP-1006', employee_name: 'Ananya Roy', department: 'Sales', productivity: 55, risk_score: 82, risk_level: 'Critical', predicted: 50 },
   ];
+
+  const filteredPoints = React.useMemo(() => {
+    if (filterMode === 'high_risk') {
+      return points.filter(p => p.risk_score >= 50 || p.risk_level === 'High' || p.risk_level === 'Critical');
+    }
+    if (filterMode === 'safe_stars') {
+      return points.filter(p => p.productivity >= 75 && p.risk_score < 40);
+    }
+    return points;
+  }, [points, filterMode]);
 
   const getColor = (level: string, riskScore: number) => {
     if (level === 'Critical' || riskScore >= 75) return '#991B1B'; // dark crimson
@@ -77,14 +89,47 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
           </div>
         </div>
 
-        {/* Legend & Maximize */}
-        <div className="flex items-center gap-3 self-end sm:self-auto">
-          <div className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>Low</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span>Moderate</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span>High</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-800"></span>Critical</span>
+        {/* Quadrant Filters, Legend & Maximize */}
+        <div className="flex flex-wrap items-center gap-2.5 self-end sm:self-auto">
+          <div className="flex items-center p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold text-slate-600">
+            <button
+              onClick={() => setFilterMode('all')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                filterMode === 'all'
+                  ? 'bg-indigo-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              All Staff ({points.length})
+            </button>
+            <button
+              onClick={() => setFilterMode('high_risk')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                filterMode === 'high_risk'
+                  ? 'bg-rose-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              High Risk
+            </button>
+            <button
+              onClick={() => setFilterMode('safe_stars')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                filterMode === 'safe_stars'
+                  ? 'bg-emerald-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Safe Stars
+            </button>
           </div>
+
+          <div className="hidden md:flex items-center gap-2 text-[10px] font-medium text-slate-500">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>Low</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span>Med</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span>High</span>
+          </div>
+
           {onMaximize && (
             <button 
               onClick={onMaximize}
@@ -121,7 +166,7 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
             <Tooltip content={<CustomTooltip />} />
             <Scatter 
               name="Employees" 
-              data={points} 
+              data={filteredPoints} 
               onClick={(pt) => {
                 if (pt && pt.employee_id && onViewEmployee) {
                   onViewEmployee(pt.employee_id);
@@ -129,7 +174,7 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
               }}
               className="cursor-pointer"
             >
-              {points.map((entry, index) => (
+              {filteredPoints.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
                   fill={getColor(entry.risk_level, entry.risk_score)} 

@@ -227,44 +227,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
           type="total"
           data={kpis?.total_employees}
           onClick={onViewAllEmployees}
-          onMaximize={() => setMaximizedCard('kpis')}
         />
         <MetricCard
           type="avg"
           data={kpis?.avg_productivity}
           onClick={() => setMaximizedCard('actual_vs_predicted')}
-          onMaximize={() => setMaximizedCard('kpis')}
         />
         <MetricCard
           type="high"
           data={kpis?.high_performers}
           onClick={() => handleStatusFilterChange('High')}
-          onMaximize={() => setMaximizedCard('kpis')}
         />
         <MetricCard
           type="risk"
           data={kpis?.at_risk}
           onClick={() => setMaximizedCard('risk_matrix')}
-          onMaximize={() => setMaximizedCard('kpis')}
         />
         <MetricCard
           type="improvement"
           data={kpis?.predicted_improvement}
           onClick={() => setMaximizedCard('actual_vs_predicted')}
-          onMaximize={() => setMaximizedCard('kpis')}
         />
         <MetricCard
           type="decline"
           data={kpis?.predicted_decline}
           onClick={() => setMaximizedCard('risk_matrix')}
-          onMaximize={() => setMaximizedCard('kpis')}
         />
       </div>
 
       {/* 4. Row 2: 3 Major Analytical Panels (Trend, Health Score, Donut) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Productivity Trend: Actual vs Predicted */}
-        <div className="lg:col-span-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        {/* Productivity Trend: Actual vs Predicted (Keep Maximize) */}
+        <div className="lg:col-span-6 flex flex-col">
           <ProductivityTrendChart
             data={data.actual_vs_predicted}
             hasTemporalData={data.has_temporal_data}
@@ -273,35 +267,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Workforce Health Score */}
-        <div className="sm:col-span-6 lg:col-span-3 h-full">
+        <div className="sm:col-span-6 lg:col-span-3 flex flex-col">
           <WorkforceHealthGauge
             data={healthData}
-            onMaximize={() => setMaximizedCard('health_score')}
           />
         </div>
 
         {/* Productivity Distribution Donut */}
-        <div className="sm:col-span-6 lg:col-span-3 h-full">
+        <div className="sm:col-span-6 lg:col-span-3 flex flex-col">
           <ProductivityDistributionDonut
             data={data.productivity_distribution}
             totalEmployees={data.distribution_total || kpis?.total_employees?.value || 520}
-            onMaximize={() => setMaximizedCard('distribution')}
           />
         </div>
       </div>
 
       {/* 5. Row 3: Dual Intelligence Panels & AI Side Panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Department Performance Bar Chart */}
-        <div className="lg:col-span-4 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        {/* Department Performance Bar Chart (Keep Maximize) */}
+        <div className="lg:col-span-4 flex flex-col">
           <DepartmentPerformanceBars
             data={data.department_productivity}
             onMaximize={() => setMaximizedCard('department')}
           />
         </div>
 
-        {/* Risk vs Performance Matrix */}
-        <div className="lg:col-span-5 h-full">
+        {/* Risk vs Performance Matrix (Keep Maximize) */}
+        <div className="lg:col-span-5 flex flex-col">
           <RiskPerformanceMatrix
             data={data.risk_matrix}
             onViewEmployee={onViewEmployee}
@@ -313,12 +305,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="lg:col-span-3 space-y-4 flex flex-col justify-between">
           <KeyInsightsPanel
             insights={data.key_insights}
-            onMaximize={() => setMaximizedCard('insights')}
           />
           <RecommendedActionsPanel
             actions={data.recommended_actions}
             onActionClick={onActionClick}
-            onMaximize={() => setMaximizedCard('actions')}
           />
           <QuickFiltersWidget
             onApplyFilters={(filters) => {
