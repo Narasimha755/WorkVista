@@ -282,34 +282,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* 5. Row 3: Dual Intelligence Panels & AI Side Panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* Department Performance Bar Chart (Keep Maximize) */}
-        <div className="lg:col-span-4 flex flex-col">
+      {/* 5. Row 3: Dual Intelligence Panels - Same Exact Size (50% / 50%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        {/* Department Performance Bar Chart */}
+        <div className="flex flex-col h-full">
           <DepartmentPerformanceBars
             data={data.department_productivity}
             onMaximize={() => setMaximizedCard('department')}
           />
         </div>
 
-        {/* Risk vs Performance Matrix (Keep Maximize) */}
-        <div className="lg:col-span-5 flex flex-col">
+        {/* Risk vs Performance Matrix */}
+        <div className="flex flex-col h-full">
           <RiskPerformanceMatrix
             data={data.risk_matrix}
             onViewEmployee={onViewEmployee}
             onMaximize={() => setMaximizedCard('risk_matrix')}
           />
         </div>
+      </div>
 
-        {/* Right Column Stack: AI Insights, Recommendations, Quick Filters */}
-        <div className="lg:col-span-3 space-y-4 flex flex-col justify-between">
+      {/* 6. Row 4: Strategic Intelligence & Action Stream */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+        <div className="flex flex-col h-full">
           <KeyInsightsPanel
             insights={data.key_insights}
           />
+        </div>
+        <div className="flex flex-col h-full">
           <RecommendedActionsPanel
             actions={data.recommended_actions}
             onActionClick={onActionClick}
           />
+        </div>
+        <div className="flex flex-col h-full">
           <QuickFiltersWidget
             onApplyFilters={(filters) => {
               if (filters.department) handleDepartmentFilterChange(filters.department);
@@ -320,7 +326,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* 6. Row 4: Employee Predictions / Intelligence Table */}
+      {/* 7. Row 5: Employee Predictions / Intelligence Table */}
       <div>
         <EmployeeTable
           employees={data.recent_employees}

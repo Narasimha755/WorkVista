@@ -199,10 +199,11 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
           {onMaximize && (
             <button
               onClick={onMaximize}
-              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors ml-1"
-              title="Maximize Table"
+              className="p-1.5 text-slate-500 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg transition-all shadow-2xs flex items-center justify-center shrink-0 ml-1"
+              title="Maximize Employee Register"
+              aria-label="Maximize Employee Register"
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-4 h-4" />
             </button>
           )}
         </div>

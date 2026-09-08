@@ -133,17 +133,18 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
           {onMaximize && (
             <button 
               onClick={onMaximize}
-              className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-              title="Maximize chart"
+              className="p-1.5 text-slate-500 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg transition-all shadow-2xs flex items-center justify-center shrink-0"
+              title="Maximize Department Performance"
+              aria-label="Maximize Department Performance"
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
       {/* Bar Chart with labels on bars */}
-      <div className="h-64 w-full">
+      <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }} barGap={3}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />

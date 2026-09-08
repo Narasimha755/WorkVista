@@ -133,17 +133,18 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
           {onMaximize && (
             <button 
               onClick={onMaximize}
-              className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-              title="Maximize matrix"
+              className="p-1.5 text-slate-500 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-all shadow-2xs flex items-center justify-center shrink-0"
+              title="Maximize Risk vs Performance Matrix"
+              aria-label="Maximize Risk vs Performance Matrix"
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
       {/* Scatter Matrix Chart */}
-      <div className="h-64 w-full">
+      <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: -10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
