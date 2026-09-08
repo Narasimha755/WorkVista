@@ -16,6 +16,7 @@ router = APIRouter()
 def get_dashboard_data(
     department: Optional[str] = None,
     status: Optional[str] = None,
+    risk_level: Optional[str] = None,
     experience_cohort: Optional[str] = None,
     cohort_grouping: Optional[str] = "department",
     db: Session = Depends(get_db)
@@ -35,7 +36,7 @@ def get_dashboard_data(
 
     # Filter employees according to query parameters
     employees = list(all_employees)
-    if department and department != "All":
+    if department and department != "All" and department != "All Departments":
         employees = [e for e in employees if e.department and e.department.lower() == department.lower()]
 
     if status and status != "All":
@@ -46,6 +47,14 @@ def get_dashboard_data(
         elif status == "Low":
             employees = [e for e in employees if e.productivity_score < 50.0]
 
+    if risk_level and risk_level != "All" and risk_level != "All Risk Levels":
+        if "high" in risk_level.lower():
+            employees = [e for e in employees if pred_map.get(e.employee_id) and (pred_map[e.employee_id].risk_level == "High" or (pred_map[e.employee_id].risk_score or 0) >= 70.0)]
+        elif "mod" in risk_level.lower():
+            employees = [e for e in employees if pred_map.get(e.employee_id) and (pred_map[e.employee_id].risk_level == "Moderate" or (30.0 <= (pred_map[e.employee_id].risk_score or 0) < 70.0))]
+        elif "low" in risk_level.lower():
+            employees = [e for e in employees if pred_map.get(e.employee_id) and (pred_map[e.employee_id].risk_level == "Low" or (pred_map[e.employee_id].risk_score or 0) < 30.0)]
+
     if experience_cohort and experience_cohort != "All":
         if experience_cohort == "<2y":
             employees = [e for e in employees if (e.experience or 0) < 2]
@@ -55,10 +64,6 @@ def get_dashboard_data(
             employees = [e for e in employees if 5 <= (e.experience or 0) <= 8]
         elif experience_cohort == ">8y":
             employees = [e for e in employees if (e.experience or 0) > 8]
-
-    # If filters result in an empty subset, fall back to all employees
-    if not employees:
-        employees = all_employees
 
     total_emp = len(employees)
     high_count = sum(1 for e in employees if e.productivity_score >= 80.0)

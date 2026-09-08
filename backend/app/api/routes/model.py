@@ -83,6 +83,23 @@ def get_model_performance(db: Session = Depends(get_db)):
 
     residuals_histogram = [{"range": k, "count": v} for k, v in residual_buckets.items()]
 
+    all_models = db.query(ModelRecord).order_by(ModelRecord.id.desc()).all()
+    model_history = [
+        {
+            "id": m.id,
+            "name": m.model_name,
+            "type": m.model_type,
+            "r2_score": m.r2_score,
+            "mae": m.mae,
+            "rmse": m.rmse,
+            "dataset_size": m.dataset_size,
+            "is_active": m.is_active,
+            "created_at": m.created_at,
+            "trained_by": "NARASIMHA"
+        }
+        for m in all_models
+    ]
+
     return {
         "has_model": True,
         "model_name": model.model_name,
@@ -103,7 +120,8 @@ def get_model_performance(db: Session = Depends(get_db)):
         "f1_score": model.f1_score,
         "feature_importances": feature_importances,
         "actual_vs_predicted_scatter": actual_vs_predicted_scatter,
-        "residuals_distribution": residuals_histogram
+        "residuals_distribution": residuals_histogram,
+        "model_history": model_history
     }
 
 @router.post("/model/retrain")

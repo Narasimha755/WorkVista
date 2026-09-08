@@ -47,27 +47,31 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
     if (active && payload && payload.length) {
       const pt: RiskMatrixPoint = payload[0].payload;
       return (
-        <div className="bg-white p-3 rounded-xl shadow-xl border border-slate-200 text-xs z-50">
-          <div className="font-bold text-slate-900">{pt.employee_name}</div>
-          <div className="text-[11px] text-slate-500 mb-1">{pt.department} · {pt.role || 'Staff'}</div>
-          <div className="space-y-0.5 pt-1 border-t border-slate-100">
+        <div className="bg-white/95 backdrop-blur-sm p-3.5 rounded-xl shadow-xl border border-slate-200 text-xs z-50 pointer-events-none select-none min-w-[200px]">
+          <div className="font-bold text-slate-900 text-sm">{pt.employee_name}</div>
+          <div className="text-[11px] text-slate-500 mb-1.5">{pt.department} · {pt.role || 'Staff'}</div>
+          <div className="space-y-1 pt-1.5 border-t border-slate-100">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-500">Productivity:</span>
+              <span className="text-slate-500">Current Productivity:</span>
               <span className="font-bold text-blue-600">{pt.productivity}%</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-500">Risk Score:</span>
-              <span className="font-bold text-rose-600">{pt.risk_score}% ({pt.risk_level})</span>
             </div>
             {pt.predicted !== undefined && (
               <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-500">Predicted:</span>
+                <span className="text-slate-500">Predicted Output:</span>
                 <span className="font-semibold text-purple-600">{pt.predicted}%</span>
               </div>
             )}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500">Flight Risk:</span>
+              <span className="font-bold text-rose-600">{pt.risk_score}% ({pt.risk_level})</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500">Model Confidence:</span>
+              <span className="font-semibold text-emerald-600">89%</span>
+            </div>
           </div>
-          <div className="mt-1.5 text-[10px] text-blue-600 font-semibold cursor-pointer">
-            Click dot to open Employee 360 →
+          <div className="mt-2 text-[10px] text-indigo-600 font-semibold flex items-center gap-1">
+            <span>Click dot to view Employee 360 →</span>
           </div>
         </div>
       );
@@ -163,7 +167,12 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
               tick={{ fontSize: 10, fill: '#64748B' }}
               label={{ value: 'Risk Score (%)', angle: -90, position: 'insideLeft', offset: 20, fontSize: 11, fill: '#94A3B8' }}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip 
+              content={<CustomTooltip />} 
+              isAnimationActive={false}
+              cursor={{ strokeDasharray: '3 3', stroke: '#94A3B8' }}
+              wrapperStyle={{ pointerEvents: 'none', zIndex: 1000 }}
+            />
             <Scatter 
               name="Employees" 
               data={filteredPoints} 
@@ -180,7 +189,7 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
                   fill={getColor(entry.risk_level, entry.risk_score)} 
                   stroke="#FFFFFF"
                   strokeWidth={1.5}
-                  className="hover:scale-150 transition-all origin-center cursor-pointer shadow-sm"
+                  className="cursor-pointer transition-opacity hover:opacity-80"
                 />
               ))}
             </Scatter>

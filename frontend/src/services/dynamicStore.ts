@@ -126,6 +126,7 @@ class DynamicStore {
   public getDashboardData(filters?: {
     department?: string;
     status?: string;
+    risk_level?: string;
     experience_cohort?: string;
     cohort_grouping?: 'department' | 'experience' | 'workload' | 'attendance';
   }): DashboardData {
@@ -140,6 +141,16 @@ class DynamicStore {
 
     if (filters?.status && filters.status !== 'All') {
       activeEmployees = activeEmployees.filter(e => e.status === filters.status);
+    }
+
+    if (filters?.risk_level && filters.risk_level !== 'All' && filters.risk_level !== 'All Risk Levels') {
+      if (filters.risk_level.toLowerCase().includes('high')) {
+        activeEmployees = activeEmployees.filter(e => (e.burnout_risk_score || 0) >= 70 || e.risk_level === 'High');
+      } else if (filters.risk_level.toLowerCase().includes('mod')) {
+        activeEmployees = activeEmployees.filter(e => ((e.burnout_risk_score || 0) >= 30 && (e.burnout_risk_score || 0) < 70) || e.risk_level === 'Moderate');
+      } else if (filters.risk_level.toLowerCase().includes('low')) {
+        activeEmployees = activeEmployees.filter(e => (e.burnout_risk_score || 0) < 30 || e.risk_level === 'Low');
+      }
     }
 
     if (filters?.experience_cohort && filters.experience_cohort !== 'All') {

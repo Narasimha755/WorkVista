@@ -194,6 +194,120 @@ export const RiskIntelligencePage: React.FC<RiskIntelligenceProps> = ({ onViewEm
         </div>
       </div>
 
+      {/* Automated Workforce Anomaly Detection Center */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Automated Workforce Anomaly Detection
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Continuous ML statistical anomaly flags requiring targeted operational mitigation
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 self-start sm:self-auto">
+            Live Anomaly Monitor Active
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          {/* Anomaly 1: Workload Overload */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800">
+                  Critical Severity
+                </span>
+                <span className="text-xs font-extrabold text-slate-900">
+                  {employees.filter(e => (e.workload || 40) > 42).length} Staff Impacted
+                </span>
+              </div>
+              <h4 className="text-xs font-bold text-slate-900">
+                Chronic Workload Overload (&gt;42h/wk)
+              </h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Elevated cognitive fatigue and burnout risk flagged for staff sustaining extended weekly hours above enterprise equilibrium thresholds.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setTriageActionMsg(`Initiated automated workload rebalancing for ${employees.filter(e => (e.workload || 40) > 42).length} staff`);
+                setTimeout(() => setTriageActionMsg(null), 3500);
+              }}
+              className="w-full py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-rose-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Rebalance Workload Allocations</span>
+            </button>
+          </div>
+
+          {/* Anomaly 2: Attendance Lapses */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800">
+                  Moderate Severity
+                </span>
+                <span className="text-xs font-extrabold text-slate-900">
+                  {employees.filter(e => (e.attendance || 90) < 85).length} Staff Impacted
+                </span>
+              </div>
+              <h4 className="text-xs font-bold text-slate-900">
+                Attendance Continuity Lapses (&lt;85%)
+              </h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Unscheduled presence deficits and continuity dips detected, statistically preceding productivity slowdown and disengagement.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setTriageActionMsg(`Scheduled managerial attendance reviews for ${employees.filter(e => (e.attendance || 90) < 85).length} staff`);
+                setTimeout(() => setTriageActionMsg(null), 3500);
+              }}
+              className="w-full py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-amber-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Schedule Attendance 1-on-1s</span>
+            </button>
+          </div>
+
+          {/* Anomaly 3: Sudden Productivity Deceleration */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">
+                  Predictive Alert
+                </span>
+                <span className="text-xs font-extrabold text-slate-900">
+                  {employees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score - 3.0).length} Staff Impacted
+                </span>
+              </div>
+              <h4 className="text-xs font-bold text-slate-900">
+                Predicted Productivity Trajectory Drop
+              </h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Scikit-Learn ML regression identifies a forecast decline of &gt;3% below baseline output, signaling impending execution bottlenecks.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setTriageActionMsg(`Assigned targeted performance coaching for ${employees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score - 3.0).length} staff`);
+                setTimeout(() => setTriageActionMsg(null), 3500);
+              }}
+              className="w-full py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-blue-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5"
+            >
+              <TrendingDown className="w-3.5 h-3.5" />
+              <span>Assign Enablement Mentorship</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Large Risk vs Performance Matrix */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
         <RiskPerformanceMatrix

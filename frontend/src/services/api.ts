@@ -51,10 +51,11 @@ async function fetchJson<T>(url: string, options?: RequestInit, fallback?: () =>
 export const api = {
   isStaticPreview,
 
-  getDashboard: (params?: { department?: string; status?: string; experience_cohort?: string; cohort_grouping?: 'department' | 'experience' | 'workload' | 'attendance' }) => {
+  getDashboard: (params?: { department?: string; status?: string; risk_level?: string; experience_cohort?: string; cohort_grouping?: 'department' | 'experience' | 'workload' | 'attendance' }) => {
     const query = new URLSearchParams();
     if (params?.department && params.department !== 'All Departments' && params.department !== 'All') query.append('department', params.department);
     if (params?.status && params.status !== 'All') query.append('status', params.status);
+    if (params?.risk_level && params.risk_level !== 'All' && params.risk_level !== 'All Risk Levels') query.append('risk_level', params.risk_level);
     if (params?.experience_cohort && params.experience_cohort !== 'All') query.append('experience_cohort', params.experience_cohort);
     if (params?.cohort_grouping) query.append('cohort_grouping', params.cohort_grouping);
     const qs = query.toString();
