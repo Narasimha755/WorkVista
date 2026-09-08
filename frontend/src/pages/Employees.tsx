@@ -115,20 +115,20 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5">
-          <a
-            href={api.getExportUrl('csv', { department, status, search })}
+          <button
+            onClick={() => api.triggerExportCsv({ department, status, search })}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
             <span>Export CSV</span>
-          </a>
-          <a
-            href={api.getExportUrl('xlsx', { department, status, search })}
+          </button>
+          <button
+            onClick={() => api.triggerExportCsv({ department, status, search })}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Export Excel</span>
-          </a>
+            <span>Export Dataset</span>
+          </button>
         </div>
       </div>
 

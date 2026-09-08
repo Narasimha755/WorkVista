@@ -111,6 +111,7 @@ export interface Employee {
   id: number;
   employee_id: string;
   employee_name: string;
+  full_name?: string;
   department: string;
   role: string;
   experience: number;
@@ -125,6 +126,12 @@ export interface Employee {
   previous_productivity: number;
   productivity_score: number;
   performance_rating: string;
+  predicted_score?: number;
+  predicted_productivity?: number;
+  prediction_change_pct?: number;
+  status?: string;
+  risk_level?: string;
+  burnout_risk_score?: number;
   prediction?: {
     predicted_productivity: number;
     change_pct: number;

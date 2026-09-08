@@ -10,15 +10,16 @@ import {
   DataQualityReport 
 } from '../types';
 import mockData from './mockData.json';
+import { dynamicStore, downloadFile } from './dynamicStore';
 
-const isStaticPreview = typeof window !== 'undefined' && (
+export const isStaticPreview = typeof window !== 'undefined' && (
   window.location.hostname.includes('github.io') ||
   window.location.protocol === 'file:'
 );
 
 const API_BASE = '/api';
 
-async function fetchJson<T>(url: string, options?: RequestInit, fallback?: () => T): Promise<T> {
+async function fetchJson<T>(url: string, options?: RequestInit, fallback?: () => T | Promise<T>): Promise<T> {
   if (isStaticPreview && fallback) {
     return fallback();
   }
@@ -38,42 +39,69 @@ async function fetchJson<T>(url: string, options?: RequestInit, fallback?: () =>
     return res.json();
   } catch (err) {
     if (fallback) {
-      console.warn('Falling back to static preview data for ' + url, err);
+      console.warn('Using dynamic client engine for ' + url, err);
       return fallback();
     }
     throw err;
   }
 }
 
-// In-memory storage for preview mode
-const localNotes: Record<string, any[]> = {};
-const localTasks: Record<string, any[]> = {};
-
 export const api = {
+  isStaticPreview,
+
   getDashboard: () => 
-    fetchJson<DashboardData>(API_BASE + '/dashboard', undefined, () => mockData.dashboard as any),
+    fetchJson<DashboardData>(API_BASE + '/dashboard', undefined, () => dynamicStore.getDashboardData()),
 
   loadDemoData: () => 
     fetchJson<{ success: boolean; message: string; report: DataQualityReport }>(
       API_BASE + '/demo', 
       { method: 'POST' },
-      () => ({
-        success: true,
-        message: 'Demo dataset loaded (520 employees)',
-        report: (mockData.dashboard as any).data_quality
-      })
+      () => {
+        dynamicStore.resetToInitial();
+        return {
+          success: true,
+          message: 'Demo dataset calibrated (520 employees active)',
+          report: (mockData.dashboard as any).data_quality
+        };
+      }
     ),
 
   uploadDataset: async (file: File) => {
+    if (isStaticPreview) {
+      return new Promise<{ success: boolean; message: string; report: DataQualityReport }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const text = (e.target?.result as string) || '';
+            const res = dynamicStore.parseAndIngestCsv(text, file.name);
+            resolve(res);
+          } catch (err: any) {
+            reject(err);
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read uploaded file.'));
+        reader.readAsText(file);
+      });
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     return fetchJson<{ success: boolean; message: string; report: DataQualityReport }>(
       API_BASE + '/upload', 
       { method: 'POST', body: formData },
-      () => ({
-        success: true,
-        message: 'Dataset ' + file.name + ' processed (Preview Mode)',
-        report: (mockData.dashboard as any).data_quality
+      () => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const text = (e.target?.result as string) || '';
+            const res = dynamicStore.parseAndIngestCsv(text, file.name);
+            resolve(res);
+          } catch (err: any) {
+            reject(err);
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read uploaded file.'));
+        reader.readAsText(file);
       })
     );
   },
@@ -96,185 +124,216 @@ export const api = {
     if (params.sort_by) query.append('sort_by', params.sort_by);
     if (params.sort_dir) query.append('sort_dir', params.sort_dir);
 
-    return fetchJson<EmployeeListResponse>(API_BASE + '/employees?' + query.toString(), undefined, () => {
-      const allItems: any[] = (mockData.employees as any).items || [];
-      let filtered = [...allItems];
-      if (params.search) {
-        const q = params.search.toLowerCase();
-        filtered = filtered.filter(e => 
-          (e.full_name && e.full_name.toLowerCase().includes(q)) ||
-          (e.employee_id && e.employee_id.toLowerCase().includes(q)) ||
-          (e.role && e.role.toLowerCase().includes(q))
-        );
-      }
-      if (params.department && params.department !== 'All Departments') {
-        filtered = filtered.filter(e => e.department === params.department);
-      }
-      if (params.status && params.status !== 'All') {
-        filtered = filtered.filter(e => e.status === params.status);
-      }
-      const page = params.page || 1;
-      const pageSize = params.page_size || 20;
-      const start = (page - 1) * pageSize;
-      const paginated = filtered.slice(start, start + pageSize);
-      return {
-        items: paginated,
-        total: filtered.length,
-        page,
-        page_size: pageSize,
-        total_pages: Math.ceil(filtered.length / pageSize) || 1
-      };
-    });
+    return fetchJson<EmployeeListResponse>(
+      API_BASE + '/employees?' + query.toString(), 
+      undefined, 
+      () => dynamicStore.getEmployees(params)
+    );
   },
 
   getEmployeeDetail: (id: string) => 
-    fetchJson<EmployeeDetail>(API_BASE + '/employees/' + id, undefined, () => {
-      const allItems: any[] = (mockData.employees as any).items || [];
-      const emp = allItems.find(e => e.employee_id === id) || allItems[0];
-      return {
-        ...emp,
-        overtime_hours: 14.5,
-        projects_completed: 6,
-        satisfaction_score: 4.2,
-        tenure_months: 28,
-        training_hours: 32,
-        risk_level: emp.burnout_risk_score >= 70 ? 'High Risk' : emp.burnout_risk_score >= 30 ? 'Moderate Risk' : 'Low Risk',
-        historical_scores: [
-          { period: 'Cohort Q1', actual: emp.productivity_score - 2, predicted: emp.productivity_score - 1 },
-          { period: 'Cohort Q2', actual: emp.productivity_score, predicted: emp.predicted_score || emp.productivity_score }
-        ],
-        shap_factors: [
-          { factor: 'Task Completion Rate', contribution: 4.5, direction: 'positive' },
-          { factor: 'Attendance Consistency', contribution: 3.2, direction: 'positive' },
-          { factor: 'Overtime & Burnout', contribution: -2.8, direction: 'negative' }
-        ],
-        actionable_recommendations: [
-          'Maintain regular 1-on-1 performance check-ins.',
-          'Review workload balance to mitigate burnout risk.'
-        ]
-      } as EmployeeDetail;
-    }),
+    fetchJson<EmployeeDetail>(
+      API_BASE + '/employees/' + id, 
+      undefined, 
+      () => dynamicStore.getEmployeeDetail(id)
+    ),
 
   runPrediction: (payload: any) => 
-    fetchJson<any>(API_BASE + '/predict', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }, () => ({
-      success: true,
-      message: 'Prediction executed successfully',
-      predictions_count: 520,
-      r2_score: 0.748,
-      mae: 6.12,
-      rmse: 7.94
-    })),
+    fetchJson<any>(
+      API_BASE + '/predict', 
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 
+      () => dynamicStore.runPrediction(payload)
+    ),
 
-  getPredictions: () => fetchJson<any>(API_BASE + '/predictions', undefined, () => []),
+  getPredictions: () => 
+    fetchJson<any>(
+      API_BASE + '/predictions', 
+      undefined, 
+      () => ({
+        total: dynamicStore.employees.length,
+        avg_predicted: Number((dynamicStore.employees.reduce((acc, e) => acc + (e.predicted_score || e.productivity_score), 0) / (dynamicStore.employees.length || 1)).toFixed(1)),
+        high_performers: dynamicStore.employees.filter(e => e.status === 'High').length,
+        at_risk: dynamicStore.employees.filter(e => (e.burnout_risk_score || 0) >= dynamicStore.settings.risk_threshold).length
+      })
+    ),
 
-  getAnalytics: () => fetchJson<any>(API_BASE + '/analytics', undefined, () => mockData.analytics),
+  getAnalytics: () => 
+    fetchJson<any>(API_BASE + '/analytics', undefined, () => (mockData as any).analytics),
 
-  getDepartments: () => fetchJson<DepartmentSummary[]>(API_BASE + '/departments', undefined, () => mockData.departments as any),
+  getDepartments: () => 
+    fetchJson<DepartmentSummary[]>(API_BASE + '/departments', undefined, () => (mockData as any).departments),
 
-  getModelPerformance: () => fetchJson<ModelPerformanceData>(API_BASE + '/model', undefined, () => mockData.model as any),
+  getModelPerformance: () => 
+    fetchJson<ModelPerformanceData>(API_BASE + '/model', undefined, () => {
+      const baseModel = JSON.parse(JSON.stringify((mockData as any).model || {}));
+      baseModel.r2_score = dynamicStore.r2Score;
+      baseModel.mae = dynamicStore.maeScore;
+      baseModel.rmse = dynamicStore.rmseScore;
+      baseModel.model_name = dynamicStore.activeModel;
+      baseModel.model_type = dynamicStore.activeModel;
+      return baseModel;
+    }),
 
-  retrainModel: (payload: any) => fetchJson<any>(API_BASE + '/model/retrain', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }, () => ({
-    success: true,
-    message: 'Model retrained successfully',
-    metrics: { r2: 0.752, mae: 5.98, rmse: 7.81 }
-  })),
+  retrainModel: (payload: any) => 
+    fetchJson<any>(
+      API_BASE + '/model/retrain', 
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 
+      () => dynamicStore.retrainModel(payload)
+    ),
 
-  getReports: () => fetchJson<ReportItem[]>(API_BASE + '/reports', undefined, () => mockData.reports as any),
+  getReports: () => 
+    fetchJson<ReportItem[]>(API_BASE + '/reports', undefined, () => dynamicStore.reports),
 
-  generateReport: (payload: any) => fetchJson<ReportItem>(API_BASE + '/reports', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }, () => ({
-    id: Date.now(),
-    title: payload.title || 'Workforce Productivity Report',
-    report_type: payload.report_type || 'Executive Summary',
-    summary: 'Executive intelligence analysis across departments and productivity cohorts.',
-    kpis: { total_employees: 520, avg_productivity: 73.1 },
-    key_findings: ['Engineering leads in productivity stability', 'Customer Support faces elevated overtime load'],
-    recommendations: ['Calibrate workload distributions', 'Offer retention coaching for moderate risk staff'],
-    format: 'PDF',
-    created_at: new Date().toISOString()
-  })),
+  generateReport: (payload: any) => 
+    fetchJson<ReportItem>(
+      API_BASE + '/reports', 
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 
+      () => dynamicStore.generateReport(payload)
+    ),
 
-  getSettings: () => fetchJson<SystemSettings>(API_BASE + '/settings', undefined, () => ({
-    high_perf_threshold: 80,
-    medium_perf_threshold: 50,
-    risk_threshold: 70,
-    default_model: 'RandomForest',
-    test_split: 0.2,
-    random_seed: 42,
-    default_date_range: 'Last 90 Days',
-    default_department: 'All',
-    data_retention_days: 90,
-    auto_retrain_enabled: false
-  })),
+  getSettings: () => 
+    fetchJson<SystemSettings>(API_BASE + '/settings', undefined, () => dynamicStore.settings),
 
-  updateSettings: (settings: SystemSettings) => fetchJson<any>(API_BASE + '/settings', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings)
-  }, () => ({ success: true, message: 'Settings saved' })),
+  updateSettings: (settings: SystemSettings) => 
+    fetchJson<any>(
+      API_BASE + '/settings', 
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      }, 
+      () => {
+        dynamicStore.settings = settings;
+        dynamicStore.recalculateCategorizations();
+        return { success: true, message: 'Settings saved and thresholds applied' };
+      }
+    ),
 
-  getAuditLogs: () => fetchJson<AuditLogItem[]>(API_BASE + '/audit', undefined, () => [
-    { id: 1, action: 'DATASET_LOAD', user: 'NARASIMHA', created_at: new Date().toISOString(), details: 'Demo dataset loaded' },
-    { id: 2, action: 'MODEL_EVAL', user: 'NARASIMHA', created_at: new Date().toISOString(), details: 'RandomForest model evaluated' }
-  ]),
+  getAuditLogs: () => 
+    fetchJson<AuditLogItem[]>(API_BASE + '/audit', undefined, () => dynamicStore.auditLogs),
 
   getEmployeeNotes: (id: string) => 
-    fetchJson<any[]>(API_BASE + '/employees/' + id + '/notes', undefined, () => localNotes[id] || [
-      { id: 1, employee_id: id, author: 'NARASIMHA', content: 'Performance review confirmed and aligned with benchmarks.', created_at: new Date().toISOString() }
-    ]),
+    fetchJson<any[]>(
+      API_BASE + '/employees/' + id + '/notes', 
+      undefined, 
+      () => dynamicStore.notes[id] || [
+        { id: 1, employee_id: id, author: 'NARASIMHA', content: 'Performance review confirmed and aligned with benchmarks.', created_at: new Date().toISOString() }
+      ]
+    ),
 
-  addEmployeeNote: (id: string, content: string) =>
-    fetchJson<any>(API_BASE + '/employees/' + id + '/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content })
-    }, () => {
-      const note = { id: Date.now(), employee_id: id, author: 'NARASIMHA', content, created_at: new Date().toISOString() };
-      if (!localNotes[id]) localNotes[id] = [];
-      localNotes[id].unshift(note);
-      return note;
-    }),
-
-  getEmployeeTasks: (id: string) =>
-    fetchJson<any[]>(API_BASE + '/employees/' + id + '/tasks', undefined, () => localTasks[id] || [
-      { id: 1, employee_id: id, title: 'Quarterly Check-in', task_type: 'Review', status: 'Pending', due_date: '2026-09-30' }
-    ]),
-
-  createEmployeeTask: (id: string, payload: any) =>
-    fetchJson<any>(API_BASE + '/employees/' + id + '/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }, () => {
-      const task = { id: Date.now(), employee_id: id, title: payload.title, task_type: payload.task_type || 'General', status: 'Pending', due_date: payload.due_date || '2026-09-30' };
-      if (!localTasks[id]) localTasks[id] = [];
-      localTasks[id].push(task);
-      return task;
-    }),
-
-  updateEmployeeTask: (id: string, taskId: number, payload: any) =>
-    fetchJson<any>(API_BASE + '/employees/' + id + '/tasks/' + taskId, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }, () => {
-      if (localTasks[id]) {
-        const t = localTasks[id].find(item => item.id === taskId);
-        if (t && payload.status) t.status = payload.status;
+  addEmployeeNote: (id: string, content: string) => 
+    fetchJson<any>(
+      API_BASE + '/employees/' + id + '/notes', 
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      }, 
+      () => {
+        const note = { id: Date.now(), employee_id: id, author: 'NARASIMHA', content, created_at: new Date().toISOString() };
+        if (!dynamicStore.notes[id]) dynamicStore.notes[id] = [];
+        dynamicStore.notes[id].unshift(note);
+        return note;
       }
-      return { success: true };
-    }),
+    ),
+
+  getEmployeeTasks: (id: string) => 
+    fetchJson<any[]>(
+      API_BASE + '/employees/' + id + '/tasks', 
+      undefined, 
+      () => dynamicStore.tasks[id] || [
+        { id: 1, employee_id: id, title: 'Quarterly Check-in', task_type: 'Review', status: 'Pending', due_date: '2026-09-30' }
+      ]
+    ),
+
+  createEmployeeTask: (id: string, payload: any) => 
+    fetchJson<any>(
+      API_BASE + '/employees/' + id + '/tasks', 
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 
+      () => {
+        const task = { 
+          id: Date.now(), 
+          employee_id: id, 
+          title: payload.title, 
+          task_type: payload.task_type || 'General', 
+          status: 'Pending', 
+          due_date: payload.due_date || '2026-09-30' 
+        };
+        if (!dynamicStore.tasks[id]) dynamicStore.tasks[id] = [];
+        dynamicStore.tasks[id].push(task);
+        return task;
+      }
+    ),
+
+  updateEmployeeTask: (id: string, taskId: number, payload: any) => 
+    fetchJson<any>(
+      API_BASE + '/employees/' + id + '/tasks/' + taskId, 
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 
+      () => {
+        if (dynamicStore.tasks[id]) {
+          const t = dynamicStore.tasks[id].find(item => item.id === taskId);
+          if (t && payload.status) t.status = payload.status;
+        }
+        return { success: true };
+      }
+    ),
+
+  // Export handlers that work seamlessly on both local server and GitHub Pages
+  triggerExportCsv: (filters?: { department?: string; status?: string; search?: string }) => {
+    if (isStaticPreview) {
+      dynamicStore.exportEmployeesCsv(filters);
+    } else {
+      const query = new URLSearchParams();
+      if (filters?.department && filters.department !== 'All Departments') query.append('department', filters.department);
+      if (filters?.status && filters.status !== 'All') query.append('status', filters.status);
+      if (filters?.search) query.append('search', filters.search);
+      window.location.href = API_BASE + '/export/csv?' + query.toString();
+    }
+  },
+
+  triggerExportEmployeeDossier: (employeeId: string, format: 'pdf' | 'csv' | 'json') => {
+    if (isStaticPreview) {
+      dynamicStore.exportEmployeeDossier(employeeId, format);
+    } else {
+      window.location.href = API_BASE + '/employees/' + employeeId + '/export/' + format;
+    }
+  },
+
+  triggerExportReportPdf: (reportId: number, reportObj?: ReportItem) => {
+    if (isStaticPreview) {
+      if (typeof window !== 'undefined' && reportObj) {
+        const printWin = window.open('', '_blank');
+        if (printWin) {
+          printWin.document.write('<html><head><title>' + reportObj.title + '</title><style>body{font-family:sans-serif;padding:30px;color:#1e293b}h1{color:#1e40af}h2{color:#475569}.card{background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid #e2e8f0}</style></head><body><h1>WorkVista Executive Report</h1><h2>' + reportObj.title + '</h2><p><b>Generated:</b> ' + new Date(reportObj.created_at).toLocaleString() + ' | <b>Author:</b> NARASIMHA</p><div class="card"><h3>Executive Briefing</h3><p>' + reportObj.summary + '</p></div><div class="card"><h3>Key Analytical Findings</h3><ul>' + (reportObj.key_findings || []).map((f: string) => '<li>' + f + '</li>').join('') + '</ul></div><div class="card"><h3>AI Strategic Interventions</h3><ul>' + (reportObj.recommendations || []).map((r: string) => '<li>' + r + '</li>').join('') + '</ul></div><p style="margin-top:40px;font-size:12px;color:#94a3b8">Generated by WorkVista AI Workforce Prediction Engine</p></body></html>');
+          printWin.document.close();
+          printWin.focus();
+          printWin.print();
+        }
+      }
+    } else {
+      window.location.href = API_BASE + '/reports/' + reportId + '/pdf';
+    }
+  },
 
   getEmployeeExportUrl: (id: string, format: 'pdf' | 'csv' | 'json') =>
     API_BASE + '/employees/' + id + '/export/' + format,

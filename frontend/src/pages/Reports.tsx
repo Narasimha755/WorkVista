@@ -196,22 +196,20 @@ export const ReportsPage: React.FC = () => {
 
                 {/* Download Actions */}
                 <div className="flex items-center gap-2">
-                  <a
-                    href={api.getReportPdfUrl(selectedReport.id)}
-                    download
+                  <button
+                    onClick={() => api.triggerExportReportPdf(selectedReport.id, selectedReport)}
                     className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-md shadow-blue-500/20"
                   >
                     <Download className="w-3.5 h-3.5 text-white" />
                     <span>Download Executive PDF</span>
-                  </a>
-                  <a
-                    href={api.getExportUrl('csv')}
-                    download
+                  </button>
+                  <button
+                    onClick={() => api.triggerExportCsv()}
                     className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors border border-slate-200"
                   >
                     <Download className="w-3.5 h-3.5 text-slate-600" />
                     <span>Download CSV</span>
-                  </a>
+                  </button>
                 </div>
               </div>
 

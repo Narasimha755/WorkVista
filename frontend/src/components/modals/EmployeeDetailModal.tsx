@@ -506,30 +506,27 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
               Export Dossier:
             </span>
-            <a
-              href={api.getEmployeeExportUrl(employeeId, 'pdf')}
-              download
+            <button
+              onClick={() => api.triggerExportEmployeeDossier(employeeId, 'pdf')}
               className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors shadow-2xs flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5 text-rose-600" />
               <span>PDF Report</span>
-            </a>
-            <a
-              href={api.getEmployeeExportUrl(employeeId, 'csv')}
-              download
+            </button>
+            <button
+              onClick={() => api.triggerExportEmployeeDossier(employeeId, 'csv')}
               className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors shadow-2xs flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5 text-emerald-600" />
               <span>CSV</span>
-            </a>
-            <a
-              href={api.getEmployeeExportUrl(employeeId, 'json')}
-              download
+            </button>
+            <button
+              onClick={() => api.triggerExportEmployeeDossier(employeeId, 'json')}
               className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors shadow-2xs flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5 text-indigo-600" />
               <span>JSON</span>
-            </a>
+            </button>
           </div>
 
           <button

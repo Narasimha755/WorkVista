@@ -95,9 +95,15 @@ if os.path.exists(frontend_dist):
     assets_dir = os.path.join(frontend_dist, "assets")
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        app.mount("/WorkVista/assets", StaticFiles(directory=assets_dir), name="workvista_assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
+        if full_path.startswith("WorkVista/"):
+            sub_path = full_path[len("WorkVista/"):]
+            sub_file = os.path.join(frontend_dist, sub_path)
+            if os.path.isfile(sub_file):
+                return FileResponse(sub_file)
         file_path = os.path.join(frontend_dist, full_path)
         if full_path and os.path.isfile(file_path):
             return FileResponse(file_path)

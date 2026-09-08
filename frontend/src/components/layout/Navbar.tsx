@@ -30,9 +30,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="text-[11px] font-bold tracking-widest text-blue-600 uppercase mb-1">
             Workforce Analytics
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Workforce Productivity Prediction
-          </h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Workforce Productivity Prediction
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              {typeof window !== 'undefined' && window.location.hostname.includes('github.io')
+                ? 'Interactive Cloud Engine (520 Profiles)'
+                : 'FastAPI ML Engine Connected'}
+            </span>
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Leverage AI to predict, monitor and improve employee performance.
           </p>

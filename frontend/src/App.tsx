@@ -88,7 +88,7 @@ export const App: React.FC = () => {
           onOpenUpload={() => setIsUploadOpen(true)}
           onLoadDemo={handleLoadDemo}
           onExport={() => {
-            window.location.href = api.getExportUrl('csv');
+            api.triggerExportCsv();
           }}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
