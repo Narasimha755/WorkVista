@@ -14,12 +14,22 @@ import {
 import mockData from './mockData.json';
 import { dynamicStore, downloadFile } from './dynamicStore';
 
+const configuredApiUrl = (import.meta as any).env?.VITE_API_BASE_URL 
+  ? String((import.meta as any).env.VITE_API_BASE_URL).replace(/\/$/, '') 
+  : '';
+
 export const isStaticPreview = typeof window !== 'undefined' && (
-  window.location.hostname.includes('github.io') ||
-  window.location.protocol === 'file:'
+  Boolean((import.meta as any).env?.VITE_DEMO_MODE) ||
+  ((window.location.hostname.includes('github.io') || window.location.protocol === 'file:') && !configuredApiUrl)
 );
 
-const API_BASE = '/api';
+export const API_BASE = configuredApiUrl || (isStaticPreview ? '' : '/api');
+
+export const runtimeMode: 'LOCAL_BACKEND' | 'PUBLIC_BACKEND' | 'DEMO_SANDBOX' = configuredApiUrl
+  ? 'PUBLIC_BACKEND'
+  : isStaticPreview
+    ? 'DEMO_SANDBOX'
+    : 'LOCAL_BACKEND';
 
 async function fetchJson<T>(url: string, options?: RequestInit, fallback?: () => T | Promise<T>): Promise<T> {
   if (isStaticPreview && fallback) {
@@ -50,6 +60,8 @@ async function fetchJson<T>(url: string, options?: RequestInit, fallback?: () =>
 
 export const api = {
   isStaticPreview,
+  runtimeMode,
+  configuredApiUrl,
 
   getDashboard: (params?: { department?: string; status?: string; risk_level?: string; experience_cohort?: string; cohort_grouping?: 'department' | 'experience' | 'workload' | 'attendance' }) => {
     const query = new URLSearchParams();

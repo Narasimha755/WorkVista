@@ -74,23 +74,27 @@ export const MetricCard: React.FC<MetricCardProps> = ({ type, data, onClick, onM
   const trend = data?.trend ?? 'up';
   const subtitle = data?.subtitle ?? (trend === 'up' ? 'vs last month' : 'vs baseline');
 
-  const sparkValues = data?.sparkline && data.sparkline.length > 2 ? data.sparkline : config.defaultSpark;
-  const minVal = Math.min(...sparkValues);
-  const maxVal = Math.max(...sparkValues) || 1;
-  const range = maxVal - minVal || 1;
-  const sparkPoints = sparkValues.map((v, i) => {
-    const x = (i / (sparkValues.length - 1)) * 50;
-    const y = 20 - ((v - minVal) / range) * 16;
-    return `${x},${y}`;
-  }).join(' ');
+  const hasHistoricalSpark = Boolean(data?.sparkline && data.sparkline.length >= 3);
+  const sparkValues = hasHistoricalSpark ? data!.sparkline : [];
+  let sparkPoints = '';
+  if (hasHistoricalSpark) {
+    const minVal = Math.min(...sparkValues);
+    const maxVal = Math.max(...sparkValues) || 1;
+    const range = maxVal - minVal || 1;
+    sparkPoints = sparkValues.map((v, i) => {
+      const x = (i / (sparkValues.length - 1)) * 50;
+      const y = 20 - ((v - minVal) / range) * 16;
+      return `${x},${y}`;
+    }).join(' ');
+  }
 
-  // Sanitize subtitle to avoid repeating percentage e.g. "45.2% 45.2% of workforce"
+  // Sanitize subtitle
   const cleanSubtitle = subtitle.replace(/^\d+(\.\d+)?%\s*/, '');
 
   return (
     <div 
       onClick={onClick}
-      className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-200 relative flex flex-col justify-between cursor-pointer group"
+      className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md transition-all duration-200 relative flex flex-col justify-between cursor-pointer group"
     >
       {/* Top row: Icon + Title + Maximize */}
       <div className="flex items-center justify-between mb-2">
@@ -103,59 +107,64 @@ export const MetricCard: React.FC<MetricCardProps> = ({ type, data, onClick, onM
               e.stopPropagation();
               onMaximize();
             }}
-            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-600 rounded transition-opacity"
-            title="Maximize card"
+            className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+            title={`Maximize ${config.title} deep analytics`}
+            aria-label={`Maximize ${config.title}`}
           >
-            <Maximize2 className="w-3 h-3" />
+            <Maximize2 className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
       {/* Metric Title & Value */}
       <div>
-        <p className="text-[11px] font-semibold text-slate-500 mb-0.5">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">
           {config.title}
         </p>
         <div className="flex items-baseline justify-between gap-1">
-          <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 leading-none">
+          <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
             {displayVal}
           </h3>
-          {/* Mini Sparkline SVG */}
-          <svg className="w-12 h-6 overflow-visible shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" viewBox="0 0 50 20">
-            <polyline
-              fill="none"
-              stroke={config.sparkColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              points={sparkPoints}
-            />
-          </svg>
+          {/* Sparkline SVG or No Comparison text */}
+          {hasHistoricalSpark ? (
+            <svg className="w-12 h-6 overflow-visible shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" viewBox="0 0 50 20">
+              <polyline
+                fill="none"
+                stroke={config.sparkColor}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={sparkPoints}
+              />
+            </svg>
+          ) : (
+            <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-700/60">
+              Snapshot
+            </span>
+          )}
         </div>
       </div>
 
       {/* Subtitle & Trend */}
-      <div className="flex items-center justify-between gap-1.5 mt-2.5 pt-2 border-t border-slate-100 text-[11px]">
-        {trend === 'up' && (
-          <span className="inline-flex items-center gap-0.5 font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+      <div className="flex items-center justify-between gap-1.5 mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+        {trend === 'up' && changePct > 0 ? (
+          <span className="inline-flex items-center gap-0.5 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60 px-1.5 py-0.5 rounded text-[10px] shrink-0">
             <ArrowUp className="w-2.5 h-2.5" />
-            <span>{changePct > 0 ? `${changePct}%` : '4.2%'}</span>
+            <span>{changePct}%</span>
           </span>
-        )}
-        {trend === 'down' && (
-          <span className="inline-flex items-center gap-0.5 font-bold text-rose-700 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+        ) : trend === 'down' && changePct > 0 ? (
+          <span className="inline-flex items-center gap-0.5 font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-800/60 px-1.5 py-0.5 rounded text-[10px] shrink-0">
             <ArrowDown className="w-2.5 h-2.5" />
-            <span>{changePct > 0 ? `${changePct}%` : '20.0%'}</span>
+            <span>{changePct}%</span>
           </span>
-        )}
-        {trend === 'neutral' && (
-          <span className="inline-flex items-center gap-1 font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+        ) : (
+          <span className="inline-flex items-center gap-1 font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
             <span>Active</span>
           </span>
         )}
-        <span className="text-slate-400 text-[10px] font-medium truncate text-right">
-          {cleanSubtitle}
+        <span className="text-slate-400 dark:text-slate-500 text-[10px] font-medium truncate text-right">
+          {cleanSubtitle || 'No historical comparison'}
         </span>
       </div>
     </div>

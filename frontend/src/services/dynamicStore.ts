@@ -321,16 +321,23 @@ class DynamicStore {
 
     baseDashboard.actual_vs_predicted = cohortSeries;
 
-    // 3. Department Productivity
+    // 3. Department Productivity dynamically calculated from activeEmployees
     const deptsAll = ['Engineering', 'Finance', 'HR', 'Marketing', 'Operations', 'Sales'];
-    baseDashboard.department_productivity = deptsAll.map(d => {
-      const emps = this.employees.filter(e => e.department === d);
-      const act = emps.length ? emps.reduce((a, e) => a + e.productivity_score, 0) / emps.length : 0;
-      const pred = emps.length ? emps.reduce((a, e) => a + (e.predicted_score || e.productivity_score), 0) / emps.length : 0;
+    const deptList = (filters?.department && filters.department !== 'All' && filters.department !== 'All Departments')
+      ? [filters.department]
+      : deptsAll;
+
+    baseDashboard.department_productivity = deptList.map(d => {
+      const emps = activeEmployees.filter(e => e.department === d);
+      const count = emps.length;
+      const act = count ? emps.reduce((a, e) => a + e.productivity_score, 0) / count : 0;
+      const pred = count ? emps.reduce((a, e) => a + (e.predicted_score || e.predicted_productivity || e.productivity_score), 0) / count : 0;
       return {
         department: d,
         actual: Number(act.toFixed(1)),
-        predicted: Number(pred.toFixed(1))
+        predicted: Number(pred.toFixed(1)),
+        headcount: count,
+        delta: Number((pred - act).toFixed(1))
       };
     });
 

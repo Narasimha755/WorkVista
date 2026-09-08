@@ -41,6 +41,7 @@ export interface DepartmentProductivityItem {
   department: string;
   actual: number;
   predicted: number;
+  count?: number;
 }
 
 export interface KeyFactorItem {

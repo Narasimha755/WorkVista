@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { PieChart as PieIcon } from 'lucide-react';
+import { PieChart as PieIcon, Maximize2 } from 'lucide-react';
 import { ProductivityDistributionItem } from '../../types';
 
 interface ProductivityDistributionDonutProps {
   data?: ProductivityDistributionItem[];
   total?: number;
   totalEmployees?: number;
+  onMaximize?: () => void;
 }
 
 export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDonutProps> = ({ 
   data, 
   total,
-  totalEmployees
+  totalEmployees,
+  onMaximize
 }) => {
   const [metricView, setMetricView] = useState<'count' | 'percentage'>('count');
 
@@ -58,28 +60,39 @@ export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDon
           </div>
         </div>
 
-        {/* In-Card View Filter */}
-        <div className="flex items-center p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold text-slate-600 shrink-0">
-          <button
-            onClick={() => setMetricView('count')}
-            className={`px-2 py-0.5 rounded-md transition-all ${
-              metricView === 'count'
-                ? 'bg-purple-600 text-white shadow-2xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Staff
-          </button>
-          <button
-            onClick={() => setMetricView('percentage')}
-            className={`px-2 py-0.5 rounded-md transition-all ${
-              metricView === 'percentage'
-                ? 'bg-purple-600 text-white shadow-2xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Share %
-          </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+            <button
+              onClick={() => setMetricView('count')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                metricView === 'count'
+                  ? 'bg-purple-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+              }`}
+            >
+              Staff
+            </button>
+            <button
+              onClick={() => setMetricView('percentage')}
+              className={`px-2 py-0.5 rounded-md transition-all ${
+                metricView === 'percentage'
+                  ? 'bg-purple-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+              }`}
+            >
+              Share %
+            </button>
+          </div>
+          {onMaximize && (
+            <button
+              onClick={onMaximize}
+              className="p-1 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-lg transition-all"
+              title="Maximize Productivity Distribution"
+              aria-label="Maximize Productivity Distribution"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

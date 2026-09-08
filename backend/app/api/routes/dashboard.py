@@ -280,15 +280,30 @@ def get_dashboard_data(
         "last_updated": updated_str
     }
 
-    # Department-wise Productivity
-    dept_items = [
-        {
-            "department": d.name,
-            "actual": d.avg_productivity,
-            "predicted": d.predicted_productivity
-        }
-        for d in departments
-    ]
+    # Dynamic Department-wise Productivity calculated directly from filtered employees
+    all_depts = sorted(list(set(e.department for e in all_employees if e.department)))
+    dept_items = []
+    dept_target_list = [department] if (department and department not in ["All", "All Departments"]) else all_depts
+    for d_name in dept_target_list:
+        d_emps = [e for e in employees if e.department == d_name]
+        if d_emps:
+            d_act = round(sum(e.productivity_score for e in d_emps) / len(d_emps), 1)
+            d_pred = round(sum(pred_map[e.employee_id].predicted_productivity if e.employee_id in pred_map else e.productivity_score for e in d_emps) / len(d_emps), 1)
+            dept_items.append({
+                "department": d_name,
+                "actual": d_act,
+                "predicted": d_pred,
+                "headcount": len(d_emps),
+                "delta": round(d_pred - d_act, 1)
+            })
+        else:
+            dept_items.append({
+                "department": d_name,
+                "actual": 0.0,
+                "predicted": 0.0,
+                "headcount": 0,
+                "delta": 0.0
+            })
 
     # Key Factors from model importances
     key_factors = []
