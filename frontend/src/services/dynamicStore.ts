@@ -9,7 +9,10 @@ import {
   ReportItem, 
   SystemSettings, 
   AuditLogItem, 
-  DataQualityReport 
+  DataQualityReport,
+  CopilotQueryResponse,
+  ScenarioSimulationResult,
+  EmployeeDigitalTwinData
 } from '../types';
 
 export function downloadFile(filename: string, content: string, mimeType: string) {
@@ -379,9 +382,57 @@ class DynamicStore {
       }
     };
 
-    // 5. Dynamic Executive Summary
+    // 5. Dynamic Executive Summary & Pulse
     const nonDecliningPct = Number((((total - (baseDashboard.kpis?.predicted_decline?.value || 0)) / (total || 1)) * 100).toFixed(1));
     baseDashboard.executive_summary = `Workforce productivity is stable with ${Math.round(avgProd)}% average output. ${nonDecliningPct}% of employees are predicted to maintain or improve performance. Engineering leads organizational velocity.`;
+
+    baseDashboard.workforce_pulse = {
+      health_score: healthNum,
+      health_status: healthStatus,
+      productivity_direction: avgProd >= 75 ? 'Positive (+1.8%)' : 'Neutral',
+      flight_risk_index: riskPct,
+      momentum: nonDecliningPct >= 50 ? 'Accelerating' : 'Decelerating',
+      stability_pct: Number((100 - riskPct).toFixed(1)),
+      confidence_score: 91.4
+    };
+
+    baseDashboard.executive_alerts = [
+      {
+        id: 'alert-1',
+        severity: 'critical',
+        category: 'Flight Risk',
+        title: `${baseDashboard.kpis?.at_risk?.value || 6} Staff at Critical Flight Risk`,
+        description: 'Heightened turnover probability localized in operations and sales. Proactive retention 1:1s advised.',
+        metric: `${baseDashboard.kpis?.at_risk?.value || 6} Staff`,
+        action_type: 'filter_risk'
+      },
+      {
+        id: 'alert-2',
+        severity: 'emerging',
+        category: 'Capacity Strain',
+        title: 'Operations Workload Peak (114%)',
+        description: 'Operations team working hours average 43.1h/week with sustained task backlog pressure.',
+        metric: '114% Cap',
+        action_type: 'filter_dept_ops'
+      },
+      {
+        id: 'alert-3',
+        severity: 'opportunity',
+        category: 'Output Acceleration',
+        title: 'Engineering Output Forecast (+3.8%)',
+        description: 'Technical skill proficiency gains projected to drive fastest productivity acceleration.',
+        metric: '+3.8% Delta',
+        action_type: 'filter_dept_eng'
+      }
+    ];
+
+    baseDashboard.capacity_utilization = [
+      { department: 'Engineering', utilization_pct: 82, status: 'Balanced', headcount: this.employees.filter(e => e.department === 'Engineering').length, hours_avg: 40.2 },
+      { department: 'Sales', utilization_pct: 96, status: 'Balanced', headcount: this.employees.filter(e => e.department === 'Sales').length, hours_avg: 41.5 },
+      { department: 'Marketing', utilization_pct: 71, status: 'Under-Capacity', headcount: this.employees.filter(e => e.department === 'Marketing').length, hours_avg: 37.8 },
+      { department: 'Operations', utilization_pct: 114, status: 'Over-Capacity', headcount: this.employees.filter(e => e.department === 'Operations').length, hours_avg: 43.2 },
+      { department: 'HR', utilization_pct: 65, status: 'Under-Capacity', headcount: this.employees.filter(e => e.department === 'HR').length, hours_avg: 36.5 }
+    ];
 
     // 6. Risk vs Performance Matrix Coordinates
     baseDashboard.risk_matrix = activeEmployees.map(e => {
@@ -981,6 +1032,285 @@ class DynamicStore {
     });
     this.addAuditLog('BULK_EMPLOYEES_FLAGGED', `Flagged ${employeeIds.length} employees: ${reason}.`);
     return { success: true, count: employeeIds.length };
+  }
+
+  public queryCopilot(query: string): CopilotQueryResponse {
+    const q = query.trim().toLowerCase();
+    const qNorm = q.replace(/-/g, ' ');
+
+    if (['highest risk', 'high risk', 'flight risk', 'turnover', 'attrition', 'at risk'].some(k => qNorm.includes(k))) {
+      const highRisk = this.employees
+        .filter(e => (e.burnout_risk_score || 0) >= 50 || e.risk_level === 'High')
+        .sort((a, b) => (b.burnout_risk_score || 0) - (a.burnout_risk_score || 0));
+      return {
+        intent: 'high_flight_risk',
+        query,
+        headline: `Found ${highRisk.length} employees with elevated flight risk scores.`,
+        answer_markdown: `WorkVista's Risk Intelligence engine identifies **${highRisk.length} staff** exhibiting heightened attrition vulnerability. Primary contributing risk factors include sustained overtime hours (>42 hrs/wk) and engagement strain. Immediate 1-on-1 check-ins are recommended.`,
+        key_metrics: [
+          { label: 'At-Risk Population', value: `${highRisk.length} staff`, badge: 'Critical' },
+          { label: 'Avg Risk Score', value: `${highRisk.length ? Math.round(highRisk.reduce((a, b) => a + (b.burnout_risk_score || 0), 0) / highRisk.length) : 0}%`, badge: 'Index' }
+        ],
+        supporting_records: highRisk.slice(0, 10).map(e => ({
+          employee_id: e.employee_id,
+          employee_name: e.full_name || e.employee_name,
+          department: e.department,
+          role: e.role,
+          productivity: e.productivity_score,
+          flight_risk_score: e.burnout_risk_score || 0,
+          risk_level: e.risk_level || 'Moderate'
+        })),
+        suggested_followups: [
+          'Which high performers are also flight risk?',
+          'Simulate reducing workload by 10%',
+          'Which department has highest workload?'
+        ]
+      };
+    }
+
+    if (['star', 'high performer', 'top performer'].some(k => qNorm.includes(k)) && ['risk', 'flight', 'leave', 'retention'].some(k => qNorm.includes(k))) {
+      const starsAtRisk = this.employees
+        .filter(e => e.productivity_score >= 80 && (e.burnout_risk_score || 0) >= 45)
+        .sort((a, b) => (b.burnout_risk_score || 0) - (a.burnout_risk_score || 0));
+      return {
+        intent: 'stars_at_risk',
+        query,
+        headline: `Identified ${starsAtRisk.length} top performers (≥80% output) with critical flight risk signals.`,
+        answer_markdown: `There are **${starsAtRisk.length} high-performing staff** whose productivity exceeds 80% but who simultaneously display elevated turnover probability. Their primary risk driver is burnout from disproportionate project allocation and overtime.`,
+        key_metrics: [
+          { label: 'Stars at Risk', value: `${starsAtRisk.length} staff`, badge: 'High Value' },
+          { label: 'Avg Output', value: `${starsAtRisk.length ? Math.round(starsAtRisk.reduce((a, b) => a + b.productivity_score, 0) / starsAtRisk.length) : 0}%`, badge: 'Top Decile' }
+        ],
+        supporting_records: starsAtRisk.slice(0, 10).map(e => ({
+          employee_id: e.employee_id,
+          employee_name: e.full_name || e.employee_name,
+          department: e.department,
+          role: e.role,
+          productivity: e.productivity_score,
+          flight_risk_score: e.burnout_risk_score || 0
+        })),
+        suggested_followups: [
+          'Schedule one-on-ones for at-risk top performers',
+          'Who are the 10 highest-risk employees?',
+          'Show workload distribution across departments'
+        ]
+      };
+    }
+
+    const depts = ['Engineering', 'Sales', 'Marketing', 'Operations', 'HR'];
+    const matchedDepts = depts.filter(d => qNorm.includes(d.toLowerCase()));
+    if (['underperform', 'lowest', 'behind', 'compare'].some(k => qNorm.includes(k)) || matchedDepts.length >= 2) {
+      const deptStats = depts.map(d => {
+        const emps = this.employees.filter(e => e.department === d);
+        const avg = emps.length ? Number((emps.reduce((a, b) => a + b.productivity_score, 0) / emps.length).toFixed(1)) : 75;
+        const wl = emps.length ? Number((emps.reduce((a, b) => a + (b.workload || 60), 0) / emps.length).toFixed(1)) : 60;
+        return { department: d, actual_productivity: avg, avg_workload: wl, headcount: emps.length };
+      }).sort((a, b) => a.actual_productivity - b.actual_productivity);
+
+      return {
+        intent: 'compare_departments',
+        query,
+        headline: matchedDepts.length >= 2 ? `Comparing ${matchedDepts.join(' vs ')}` : `${deptStats[0].department} currently has the lowest average baseline (${deptStats[0].actual_productivity}%).`,
+        answer_markdown: `Department performance analysis indicates that **${deptStats[0].department}** operates at ${deptStats[0].actual_productivity}% baseline output, while **${deptStats[deptStats.length - 1].department}** leads at ${deptStats[deptStats.length - 1].actual_productivity}%.`,
+        key_metrics: [
+          { label: 'Lowest Dept', value: `${deptStats[0].department} (${deptStats[0].actual_productivity}%)`, badge: 'Review' },
+          { label: 'Leading Dept', value: `${deptStats[deptStats.length - 1].department} (${deptStats[deptStats.length - 1].actual_productivity}%)`, badge: 'Top' }
+        ],
+        supporting_records: deptStats,
+        suggested_followups: [
+          'Which department has highest workload?',
+          'Show employees predicted to decline',
+          'Who are the 10 highest-risk employees?'
+        ]
+      };
+    }
+
+    const matches = this.employees.filter(e => {
+      const t = `${e.full_name || e.employee_name} ${e.employee_id} ${e.department} ${e.role}`.toLowerCase();
+      return q.split(' ').some(w => t.includes(w));
+    });
+    return {
+      intent: 'general_intelligence',
+      query,
+      headline: `Processed query against active dataset (${this.employees.length} employees).`,
+      answer_markdown: `Analyzed workforce data for **'${query}'**. Found **${matches.length} matching employee records** across departments.`,
+      key_metrics: [
+        { label: 'Total Records', value: `${this.employees.length} staff`, badge: 'Roster' },
+        { label: 'Matches Found', value: `${matches.length}`, badge: 'Results' }
+      ],
+      supporting_records: (matches.length ? matches : this.employees).slice(0, 10).map(e => ({
+        employee_id: e.employee_id,
+        employee_name: e.full_name || e.employee_name,
+        department: e.department,
+        role: e.role,
+        productivity: e.productivity_score,
+        flight_risk: e.risk_level || 'Low'
+      })),
+      suggested_followups: [
+        'Who are the 10 highest-risk employees?',
+        'Which department has highest workload?',
+        'What are the strongest productivity drivers?',
+        'Show employees predicted to decline'
+      ]
+    };
+  }
+
+  public simulateScenario(params: {
+    workload_delta_pct?: number;
+    attendance_delta_pct?: number;
+    engagement_delta_pct?: number;
+    training_uplift_pct?: number;
+    target_department?: string;
+  }): ScenarioSimulationResult {
+    const wl = (params.workload_delta_pct || 0) / 100;
+    const att = (params.attendance_delta_pct || 0) / 100;
+    const eng = (params.engagement_delta_pct || 0) / 100;
+    const trn = (params.training_uplift_pct || 0) / 100;
+    const deptScope = params.target_department || 'All';
+
+    const baseAvg = Number((this.employees.reduce((a, b) => a + b.productivity_score, 0) / (this.employees.length || 1)).toFixed(1));
+    const baseAtRisk = this.employees.filter(e => (e.burnout_risk_score || 0) >= 60 || e.risk_level === 'High').length;
+    const baseHigh = this.employees.filter(e => e.productivity_score >= 80).length;
+
+    const prodGain = (wl < 0 ? Math.abs(wl) * 10 : -wl * 8) + (att * 18) + (eng * 16) + (trn * 14);
+    const simAvg = Number(Math.min(98, Math.max(50, baseAvg + prodGain)).toFixed(1));
+    const prodDelta = Number((simAvg - baseAvg).toFixed(1));
+
+    const riskRelief = Math.round((Math.abs(wl < 0 ? wl : 0) * 8) + (eng * 12) + (att * 4));
+    const simAtRisk = Math.max(0, baseAtRisk - riskRelief);
+    const riskReduction = baseAtRisk - simAtRisk;
+    const highGain = Math.round(prodDelta * 14);
+    const simHigh = baseHigh + highGain;
+
+    const healthDelta = Math.round(prodDelta * 1.5 + riskReduction * 1.2);
+    const simHealth = Math.min(98, Math.max(50, 82 + healthDelta));
+
+    const depts = ['Engineering', 'Finance', 'HR', 'Marketing', 'Operations', 'Sales'];
+    const deptImpacts = depts.map(d => {
+      const emps = this.employees.filter(e => e.department === d);
+      const bOutput = emps.length ? Number((emps.reduce((a, b) => a + b.productivity_score, 0) / emps.length).toFixed(1)) : 75;
+      const sOutput = Number((bOutput + prodDelta).toFixed(1));
+      const bRisk = emps.filter(e => (e.burnout_risk_score || 0) >= 60).length;
+      const sRisk = Math.max(0, bRisk - 1);
+      return {
+        department: d,
+        baseline_output: bOutput,
+        simulated_output: sOutput,
+        delta_output: prodDelta,
+        baseline_at_risk: bRisk,
+        simulated_at_risk: sRisk,
+        at_risk_reduction: bRisk - sRisk,
+        capacity_status: d === 'Operations' ? 'Over-Capacity' : d === 'HR' ? 'Under-Capacity' : 'Balanced'
+      };
+    });
+
+    const summary = `Simulating policy across ${deptScope} projects an overall productivity shift of ${prodDelta >= 0 ? '+' : ''}${prodDelta}% (from ${baseAvg}% to ${simAvg}%). Flight risk exposure decreases by ${riskReduction} employees, while high performers increase by +${highGain} staff. Composite Health Index reaches ${simHealth}/100.`;
+
+    return {
+      scenario_name: 'Custom Org Policy Simulation',
+      target_scope: deptScope,
+      baseline_avg_productivity: baseAvg,
+      simulated_avg_productivity: simAvg,
+      productivity_delta: prodDelta,
+      baseline_at_risk_count: baseAtRisk,
+      simulated_at_risk_count: simAtRisk,
+      at_risk_reduction: riskReduction,
+      baseline_high_performers: baseHigh,
+      simulated_high_performers: simHigh,
+      high_performer_gain: highGain,
+      baseline_health_score: 82,
+      simulated_health_score: simHealth,
+      health_score_delta: healthDelta,
+      executive_summary: summary,
+      department_impacts: deptImpacts,
+      policy_recommendations: [
+        'Prioritize workload rebalancing in Operations before rolling out company-wide incentives.',
+        'Pair skill enablement with dedicated project milestones to lock in predicted output gains.',
+        'Conduct bi-weekly check-ins with retained at-risk cohorts.'
+      ]
+    };
+  }
+
+  public getEmployeeDigitalTwin(employeeId: string): EmployeeDigitalTwinData {
+    const emp = this.employees.find(e => e.employee_id === employeeId) || this.employees[0];
+    const currentP = emp.productivity_score;
+    const predP = emp.predicted_score || emp.predicted_productivity || currentP;
+    const delta = Number((predP - currentP).toFixed(1));
+    const riskScore = emp.burnout_risk_score || 25;
+
+    return {
+      employee_id: emp.employee_id,
+      employee_name: emp.full_name || emp.employee_name,
+      department: emp.department,
+      role: emp.role || 'Specialist',
+      current_state: {
+        productivity: currentP,
+        workload: emp.workload,
+        working_hours: emp.working_hours,
+        attendance: emp.attendance,
+        engagement: emp.engagement,
+        skill_level: emp.skill_level,
+        flight_risk_score: riskScore,
+        risk_level: emp.risk_level || 'Low'
+      },
+      predicted_state: {
+        predicted_productivity: predP,
+        forecast_delta: delta,
+        day_30_forecast: Number((currentP + delta * 0.7).toFixed(1)),
+        day_90_forecast: Number((currentP + delta * 1.2).toFixed(1)),
+        trajectory_status: delta > 1.5 ? 'Accelerating' : delta < -1.5 ? 'Decelerating' : 'Stable',
+        risk_trajectory: (emp.working_hours || 0) > 42 && riskScore > 50 ? 'Increasing' : 'Stable',
+        confidence_score: 91.5,
+        data_quality_pct: 99.4
+      },
+      pressure_signals: [
+        { signal: 'Workload Utilization', value: `${emp.workload || 65}%`, status: (emp.workload || 0) >= 80 ? 'Critical Overload' : (emp.workload || 0) >= 70 ? 'Elevated' : 'Optimal', severity: (emp.workload || 0) >= 80 ? 'high' : (emp.workload || 0) >= 70 ? 'medium' : 'low' },
+        { signal: 'Weekly Hours Strain', value: `${emp.working_hours || 40.0} hrs/wk`, status: (emp.working_hours || 0) >= 43 ? 'Excessive Overtime' : 'Standard Operating', severity: (emp.working_hours || 0) >= 43 ? 'high' : 'low' },
+        { signal: 'Attendance Adherence', value: `${emp.attendance || 90}%`, status: (emp.attendance || 0) < 85 ? 'Slipping (<85%)' : 'Resilient', severity: (emp.attendance || 0) < 85 ? 'medium' : 'low' },
+        { signal: 'Engagement Vitality', value: `${emp.engagement || 80}%`, status: (emp.engagement || 0) < 70 ? 'Disengaged (<70%)' : 'Strong', severity: (emp.engagement || 0) < 70 ? 'medium' : 'low' }
+      ],
+      explainability_waterfall: [
+        { feature: 'Attendance Adherence', impact_pct: Number((((emp.attendance || 90) - 88) * 0.22).toFixed(1)), type: (emp.attendance || 90) >= 88 ? 'positive' : 'negative', evidence: `${emp.attendance}% attendance adherence` },
+        { feature: 'Engagement Index', impact_pct: Number((((emp.engagement || 80) - 80) * 0.20).toFixed(1)), type: (emp.engagement || 80) >= 80 ? 'positive' : 'negative', evidence: `${emp.engagement}% engagement index` },
+        { feature: 'Workload & Hours Pressure', impact_pct: Number(((40 - (emp.working_hours || 40)) * 0.35).toFixed(1)), type: (emp.working_hours || 40) <= 40 ? 'positive' : 'negative', evidence: `${emp.working_hours} hrs/wk (${emp.workload}% load)` },
+        { feature: 'Technical Skill Proficiency', impact_pct: Number((((emp.skill_level || 75) - 75) * 0.18).toFixed(1)), type: (emp.skill_level || 75) >= 75 ? 'positive' : 'negative', evidence: `${emp.skill_level}% proficiency score` }
+      ]
+    };
+  }
+
+  public simulateEmployeeIntervention(employeeId: string, params: any) {
+    const emp = this.employees.find(e => e.employee_id === employeeId) || this.employees[0];
+    const baseP = emp.productivity_score;
+    const baseR = emp.burnout_risk_score || 25;
+
+    const pGain = (
+      (-params.workload_delta * 0.15)
+      + (-params.hours_delta * 0.35)
+      + ((params.attendance_delta || 0) * 0.25)
+      + ((params.engagement_delta || 0) * 0.22)
+      + ((params.skill_delta || 0) * 0.20)
+    );
+    const simP = Math.min(99, Math.max(40, Number((baseP + pGain).toFixed(1))));
+
+    const rRelief = (
+      (Math.abs(params.workload_delta < 0 ? params.workload_delta : 0) * 0.4)
+      + (Math.abs(params.hours_delta < 0 ? params.hours_delta : 0) * 0.8)
+      + ((params.engagement_delta || 0) * 0.5)
+      + ((params.attendance_delta || 0) * 0.2)
+    );
+    const simR = Math.max(5, Math.min(95, Number((baseR - rRelief).toFixed(1))));
+
+    return {
+      employee_id: emp.employee_id,
+      employee_name: emp.full_name || emp.employee_name,
+      baseline_productivity: baseP,
+      simulated_productivity: simP,
+      productivity_delta: Number((simP - baseP).toFixed(1)),
+      baseline_flight_risk: baseR,
+      simulated_flight_risk: simR,
+      risk_delta: Number((simR - baseR).toFixed(1)),
+      simulated_status: simP >= 80 ? 'High' : simP >= 50 ? 'Medium' : 'At Risk'
+    };
   }
 }
 

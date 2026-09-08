@@ -32,6 +32,7 @@ import { KeyInsightsPanel } from '../components/charts/KeyInsightsPanel';
 import { RecommendedActionsPanel } from '../components/charts/RecommendedActionsPanel';
 import { QuickFiltersWidget } from '../components/charts/QuickFiltersWidget';
 import { ExecutiveSummaryBanner } from '../components/charts/ExecutiveSummaryBanner';
+import { WorkforcePulseBar } from '../components/dashboard/WorkforcePulseBar';
 import { EmployeeTable } from '../components/tables/EmployeeTable';
 import { CardMaximizeModal } from '../components/modals/CardMaximizeModal';
 import { DashboardData, RecommendedActionItem } from '../types';
@@ -47,6 +48,9 @@ interface DashboardProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onActionClick: (action: RecommendedActionItem) => void;
+  onOpenCopilot?: (query?: string) => void;
+  onOpenScenarioPlanner?: (dept?: string) => void;
+  onOpenCompare?: () => void;
 }
 
 type MaximizeType = 
@@ -77,6 +81,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   searchQuery,
   onSearchChange,
   onActionClick,
+  onOpenCopilot,
+  onOpenScenarioPlanner,
+  onOpenCompare,
 }) => {
   const [data, setData] = useState<DashboardData | null>(initialData);
   const [isFiltering, setIsFiltering] = useState<boolean>(false);
@@ -302,7 +309,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* 2. Executive Summary Banner */}
+      {/* 2. Real-Time Workforce Pulse & Executive Signals */}
+      <WorkforcePulseBar
+        pulse={data.workforce_pulse}
+        alerts={data.executive_alerts}
+        onOpenCopilot={onOpenCopilot}
+        onOpenScenarioPlanner={onOpenScenarioPlanner}
+        onFilterByDepartment={(dept) => handleDepartmentFilterChange(dept)}
+      />
+
+      {/* 3. Executive Summary Banner */}
       <ExecutiveSummaryBanner
         summaryText={data.executive_summary}
         avgProductivity={kpis?.avg_productivity?.value}

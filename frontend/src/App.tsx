@@ -15,6 +15,9 @@ import { ActivityPage } from './pages/Activity';
 import { UploadModal } from './components/modals/UploadModal';
 import { EmployeeDetailModal } from './components/modals/EmployeeDetailModal';
 import { SearchModal } from './components/modals/SearchModal';
+import { WorkVistaCopilotModal } from './components/copilot/WorkVistaCopilotModal';
+import { WorkforceScenarioPlannerModal } from './components/modals/WorkforceScenarioPlannerModal';
+import { UniversalCompareModal } from './components/modals/UniversalCompareModal';
 import { DashboardData, RecommendedActionItem } from './types';
 import { api } from './services/api';
 
@@ -29,6 +32,13 @@ export const App: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+
+  // New Phase 1 Intelligence Modals
+  const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
+  const [copilotInitialQuery, setCopilotInitialQuery] = useState<string>('');
+  const [isScenarioOpen, setIsScenarioOpen] = useState<boolean>(false);
+  const [scenarioTargetDept, setScenarioTargetDept] = useState<string>('All');
+  const [isCompareOpen, setIsCompareOpen] = useState<boolean>(false);
 
   // Global search
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -49,11 +59,12 @@ export const App: React.FC = () => {
     loadDashboard();
   }, []);
 
+  // Keyboard shortcut listener: Ctrl+K or Cmd+K opens Copilot or Omni Search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsSearchOpen(prev => !prev);
+        setIsCopilotOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -81,7 +92,8 @@ export const App: React.FC = () => {
     if (action.category === 'Intervention') {
       setCurrentTab('employees');
     } else if (action.category === 'Workload') {
-      setCurrentTab('departments');
+      setScenarioTargetDept('Operations');
+      setIsScenarioOpen(true);
     } else if (action.category === 'Training') {
       setCurrentTab('analytics');
     } else {
@@ -89,8 +101,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleOpenCopilotWithQuery = (q?: string) => {
+    setCopilotInitialQuery(q || '');
+    setIsCopilotOpen(true);
+  };
+
+  const handleOpenScenarioPlannerWithDept = (dept?: string) => {
+    setScenarioTargetDept(dept || 'All');
+    setIsScenarioOpen(true);
+  };
+
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
       {/* Persistent Left Sidebar */}
       <Sidebar 
         currentTab={currentTab} 
@@ -108,15 +130,15 @@ export const App: React.FC = () => {
           }}
           onRefresh={handleRefresh}
           onOpenSearch={() => setIsSearchOpen(true)}
+          onOpenCopilot={() => handleOpenCopilotWithQuery('')}
+          onOpenScenarioPlanner={() => handleOpenScenarioPlannerWithDept('All')}
+          onOpenCompare={() => setIsCompareOpen(true)}
           onNavigateToTab={(tab) => setCurrentTab(tab as NavTab)}
           isRefreshing={isRefreshing}
           isLoadingDemo={isLoadingDemo}
           searchQuery={searchQuery}
           onSearchChange={(q) => {
             setSearchQuery(q);
-            if (q.trim() && currentTab === 'dashboard') {
-              // keep on dashboard or let user browse
-            }
           }}
         />
 
@@ -133,6 +155,9 @@ export const App: React.FC = () => {
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onActionClick={handleActionClick}
+              onOpenCopilot={handleOpenCopilotWithQuery}
+              onOpenScenarioPlanner={handleOpenScenarioPlannerWithDept}
+              onOpenCompare={() => setIsCompareOpen(true)}
             />
           )}
 
@@ -160,7 +185,9 @@ export const App: React.FC = () => {
           )}
 
           {currentTab === 'departments' && (
-            <DepartmentsPage />
+            <DepartmentsPage 
+              onOpenScenarioPlanner={handleOpenScenarioPlannerWithDept}
+            />
           )}
 
           {currentTab === 'data-studio' && (
@@ -197,18 +224,40 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* Employee Detail Modal */}
+      {/* Employee Detail Modal (360° + Digital Twin) */}
       <EmployeeDetailModal
         employeeId={selectedEmployeeId}
         onClose={() => setSelectedEmployeeId(null)}
       />
 
-      {/* Global Command/Search Modal (Ctrl+K) */}
+      {/* Global Command/Search Modal */}
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSelectEmployee={(id) => setSelectedEmployeeId(id)}
         onSelectTab={(tab) => setCurrentTab(tab as NavTab)}
+      />
+
+      {/* WorkVista AI Copilot Modal */}
+      <WorkVistaCopilotModal
+        isOpen={isCopilotOpen}
+        initialQuery={copilotInitialQuery}
+        onClose={() => setIsCopilotOpen(false)}
+        onViewEmployee={(id) => setSelectedEmployeeId(id)}
+      />
+
+      {/* Workforce Scenario Planner & Policy Simulator Modal */}
+      <WorkforceScenarioPlannerModal
+        isOpen={isScenarioOpen}
+        initialDepartment={scenarioTargetDept}
+        onClose={() => setIsScenarioOpen(false)}
+      />
+
+      {/* Universal Side-by-Side Compare Modal */}
+      <UniversalCompareModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        onViewEmployee={(id) => setSelectedEmployeeId(id)}
       />
     </div>
   );

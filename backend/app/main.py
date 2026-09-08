@@ -15,7 +15,9 @@ from app.api.routes import (
     model,
     reports,
     settings as app_settings,
-    export
+    export,
+    copilot,
+    scenario
 )
 
 Base.metadata.create_all(bind=engine)
@@ -76,6 +78,8 @@ app.include_router(model.router, prefix="/api", tags=["Model Performance"])
 app.include_router(reports.router, prefix="/api", tags=["Reports"])
 app.include_router(app_settings.router, prefix="/api", tags=["Settings & Audit"])
 app.include_router(export.router, prefix="/api", tags=["Export"])
+app.include_router(copilot.router, prefix="/api", tags=["AI Copilot"])
+app.include_router(scenario.router, prefix="/api", tags=["Scenario Planner"])
 
 @app.get("/api/health")
 def health_check():

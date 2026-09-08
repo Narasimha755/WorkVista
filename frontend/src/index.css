@@ -4,26 +4,27 @@
 
 @layer base {
   body {
-    @apply bg-[#F8FAFC] text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200;
+    @apply bg-[#080A12] text-slate-100 antialiased selection:bg-[#00E5FF]/30 selection:text-[#00E5FF];
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
 
-/* Custom sleek scrollbars */
+/* Sleek obsidian cyber scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(8, 10, 18, 0.6);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(0, 229, 255, 0.4);
 }
 
 .custom-card {
-  @apply bg-white border border-slate-200/80 rounded-2xl shadow-sm transition-all duration-200;
+  @apply bg-[#0D111C]/80 backdrop-blur-md border border-white/[0.08] rounded-2xl transition-all duration-200;
 }

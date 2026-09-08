@@ -146,6 +146,9 @@ export interface DashboardData {
     predicted_improvement?: KPICardData;
     predicted_decline?: KPICardData;
   };
+  workforce_pulse?: WorkforcePulse;
+  executive_alerts?: ExecutiveAlert[];
+  capacity_utilization?: DepartmentCapacityItem[];
   workforce_health?: WorkforceHealthData;
   executive_summary?: string;
   risk_matrix?: RiskMatrixPoint[];
@@ -335,4 +338,121 @@ export interface DataQualityReport {
   cleaning_actions_taken: string[];
   model_used: string;
   accuracy: number;
+}
+
+export interface WorkforcePulse {
+  health_score: number;
+  health_status: string;
+  productivity_direction?: string;
+  flight_risk_index?: number;
+  momentum?: string;
+  stability_pct?: number;
+  confidence_score?: number;
+  at_risk_count?: number;
+  at_risk_percentage?: string;
+  productivity_velocity?: string;
+  capacity_saturation?: string;
+}
+
+export interface ExecutiveAlert {
+  id?: string;
+  severity?: 'critical' | 'emerging' | 'opportunity';
+  level?: 'critical' | 'emerging' | 'opportunity' | string;
+  category?: string;
+  title: string;
+  description: string;
+  metric?: string;
+  action_type?: string;
+  action_label?: string;
+  department?: string;
+}
+
+export interface DepartmentCapacityItem {
+  department: string;
+  utilization_pct: number;
+  status: 'Over-Capacity' | 'Balanced' | 'Under-Capacity' | string;
+  headcount: number;
+  hours_avg: number;
+}
+
+export interface CopilotQueryResponse {
+  intent: string;
+  query: string;
+  headline: string;
+  answer_markdown: string;
+  key_metrics: Array<{ label: string; value: string; badge?: string; status?: string }>;
+  supporting_records: any[];
+  suggested_followups: string[];
+}
+
+export interface ScenarioSimulationResult {
+  scenario_name: string;
+  target_scope: string;
+  baseline_avg_productivity: number;
+  simulated_avg_productivity: number;
+  productivity_delta: number;
+  baseline_at_risk_count: number;
+  simulated_at_risk_count: number;
+  at_risk_reduction: number;
+  baseline_high_performers: number;
+  simulated_high_performers: number;
+  high_performer_gain: number;
+  baseline_health_score: number;
+  simulated_health_score: number;
+  health_score_delta: number;
+  executive_summary: string;
+  department_impacts: Array<{
+    department: string;
+    baseline_output: number;
+    simulated_output: number;
+    delta_output: number;
+    baseline_at_risk: number;
+    simulated_at_risk: number;
+    at_risk_reduction: number;
+    capacity_status: string;
+  }>;
+  policy_recommendations: string[];
+}
+
+export interface PressureSignal {
+  signal: string;
+  value: string;
+  status: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+export interface ExplainabilityFactor {
+  feature: string;
+  impact_pct: number;
+  type: 'positive' | 'negative';
+  evidence: string;
+}
+
+export interface EmployeeDigitalTwinData {
+  employee_id: string;
+  employee_name: string;
+  department: string;
+  role: string;
+  current_state: {
+    productivity: number;
+    workload?: number;
+    working_hours?: number;
+    attendance?: number;
+    engagement?: number;
+    skill_level?: number;
+    flight_risk_score: number;
+    risk_level: string;
+  };
+  predicted_state: {
+    predicted_productivity: number;
+    forecast_delta: number;
+    day_30_forecast: number;
+    day_90_forecast: number;
+    trajectory_status: string;
+    risk_trajectory: string;
+    confidence_score: number;
+    data_quality_pct: number;
+  };
+  pressure_signals: PressureSignal[];
+  explainability_waterfall: ExplainabilityFactor[];
 }

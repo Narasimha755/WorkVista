@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Download, UploadCloud, Sparkles, RefreshCw, ChevronDown, Moon, Sun, ShieldCheck } from 'lucide-react';
+import { Search, Calendar, Download, UploadCloud, Sparkles, RefreshCw, ChevronDown, Moon, Sun, ShieldCheck, Sliders, GitCompare } from 'lucide-react';
 import { NotificationDropdown } from './NotificationDropdown';
 import { api } from '../../services/api';
 
@@ -9,6 +9,9 @@ interface NavbarProps {
   onExport: () => void;
   onRefresh: () => void;
   onOpenSearch?: () => void;
+  onOpenCopilot?: () => void;
+  onOpenScenarioPlanner?: () => void;
+  onOpenCompare?: () => void;
   onNavigateToTab?: (tab: string) => void;
   isRefreshing?: boolean;
   isLoadingDemo?: boolean;
@@ -22,6 +25,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onExport,
   onRefresh,
   onOpenSearch,
+  onOpenCopilot,
+  onOpenScenarioPlanner,
+  onOpenCompare,
   onNavigateToTab,
   isRefreshing,
   isLoadingDemo,
@@ -172,12 +178,48 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden sm:inline">{isLoadingDemo ? 'Processing...' : 'Demo Data'}</span>
           </button>
 
+          {/* AI Copilot Button */}
+          {onOpenCopilot && (
+            <button
+              onClick={onOpenCopilot}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/80 rounded-xl transition-all shadow-2xs"
+              title="WorkVista AI Copilot"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="hidden sm:inline">AI Copilot</span>
+            </button>
+          )}
+
+          {/* Scenario Simulator Button */}
+          {onOpenScenarioPlanner && (
+            <button
+              onClick={onOpenScenarioPlanner}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/80 rounded-xl transition-all shadow-2xs"
+              title="Workforce Policy Scenario Planner"
+            >
+              <Sliders className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="hidden lg:inline">Simulator</span>
+            </button>
+          )}
+
+          {/* Compare Button */}
+          {onOpenCompare && (
+            <button
+              onClick={onOpenCompare}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800/80 rounded-xl transition-all shadow-2xs"
+              title="Universal Side-by-Side Benchmarking"
+            >
+              <GitCompare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="hidden lg:inline">Compare</span>
+            </button>
+          )}
+
           {/* Upload Dataset Button */}
           <button
             onClick={onOpenUpload}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/80 rounded-xl transition-colors shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors shadow-2xs"
           >
-            <UploadCloud className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <UploadCloud className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
             <span className="hidden sm:inline">Upload</span>
           </button>
 

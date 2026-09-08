@@ -9,7 +9,10 @@ import {
   AuditLogItem, 
   DataQualityReport,
   NotificationItem,
-  DatasetItem 
+  DatasetItem,
+  CopilotQueryResponse,
+  ScenarioSimulationResult,
+  EmployeeDigitalTwinData
 } from '../types';
 import mockData from './mockData.json';
 import { dynamicStore, downloadFile } from './dynamicStore';
@@ -433,5 +436,57 @@ export const api = {
 
   bulkFlagEmployees: (employeeIds: string[], reason: string) => {
     return dynamicStore.bulkFlagEmployees(employeeIds, reason);
-  }
+  },
+
+  queryCopilot: (query: string) =>
+    fetchJson<CopilotQueryResponse>(
+      API_BASE + '/copilot/query',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      },
+      () => dynamicStore.queryCopilot(query)
+    ),
+
+  simulateScenario: (params: {
+    workload_delta_pct?: number;
+    attendance_delta_pct?: number;
+    engagement_delta_pct?: number;
+    training_uplift_pct?: number;
+    target_department?: string;
+  }) =>
+    fetchJson<ScenarioSimulationResult>(
+      API_BASE + '/scenario/simulate',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      },
+      () => dynamicStore.simulateScenario(params)
+    ),
+
+  getEmployeeDigitalTwin: (employeeId: string) =>
+    fetchJson<EmployeeDigitalTwinData>(
+      API_BASE + '/employees/' + employeeId + '/digital-twin',
+      undefined,
+      () => dynamicStore.getEmployeeDigitalTwin(employeeId)
+    ),
+
+  simulateEmployeeIntervention: (employeeId: string, params: {
+    workload_delta?: number;
+    hours_delta?: number;
+    attendance_delta?: number;
+    engagement_delta?: number;
+    skill_delta?: number;
+  }) =>
+    fetchJson<any>(
+      API_BASE + '/employees/' + employeeId + '/simulate',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      },
+      () => dynamicStore.simulateEmployeeIntervention(employeeId, params)
+    )
 };
