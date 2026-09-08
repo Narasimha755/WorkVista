@@ -5,18 +5,21 @@ import {
   UserCheck, 
   Scale, 
   GraduationCap, 
-  Trophy 
+  Trophy,
+  Maximize2 
 } from 'lucide-react';
 import { RecommendedActionItem } from '../../types';
 
 interface RecommendedActionsPanelProps {
   actions?: RecommendedActionItem[];
   onActionClick?: (action: RecommendedActionItem) => void;
+  onMaximize?: () => void;
 }
 
 export const RecommendedActionsPanel: React.FC<RecommendedActionsPanelProps> = ({ 
   actions, 
-  onActionClick 
+  onActionClick,
+  onMaximize 
 }) => {
   const defaultActions: RecommendedActionItem[] = [
     {
@@ -97,6 +100,15 @@ export const RecommendedActionsPanel: React.FC<RecommendedActionsPanelProps> = (
             Recommended Actions (AI)
           </h3>
         </div>
+        {onMaximize && (
+          <button
+            onClick={onMaximize}
+            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Maximize View"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Action Items List */}

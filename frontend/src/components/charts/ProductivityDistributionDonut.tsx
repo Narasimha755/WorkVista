@@ -1,15 +1,18 @@
 import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { Maximize2 } from 'lucide-react';
 import { ProductivityDistributionItem } from '../../types';
 
 interface ProductivityDistributionDonutProps {
   data?: ProductivityDistributionItem[];
   total?: number;
+  onMaximize?: () => void;
 }
 
 export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDonutProps> = ({ 
   data, 
-  total = 256 
+  total = 256,
+  onMaximize
 }) => {
   const defaultData: ProductivityDistributionItem[] = [
     { name: 'High (>= 80%)', count: 82, percentage: 32, color: '#10B981' },
@@ -30,6 +33,15 @@ export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDon
             Productivity Distribution (Predicted)
           </h3>
         </div>
+        {onMaximize && (
+          <button
+            onClick={onMaximize}
+            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Maximize View"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Main Area: Donut Chart with Center Text & Right Legend */}

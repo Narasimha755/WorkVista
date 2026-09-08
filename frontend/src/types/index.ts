@@ -11,6 +11,8 @@ export interface ActualVsPredictedSeries {
   label: string;
   actual: number;
   predicted: number;
+  count?: number;
+  delta?: number;
 }
 
 export interface ProductivityDistributionItem {

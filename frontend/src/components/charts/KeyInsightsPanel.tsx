@@ -1,13 +1,14 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, AlertTriangle, Users, Target, Sparkles } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, Users, Target, Sparkles, Maximize2 } from 'lucide-react';
 import { KeyInsightItem } from '../../types';
 
 interface KeyInsightsPanelProps {
   insights?: KeyInsightItem[];
   onViewAll?: () => void;
+  onMaximize?: () => void;
 }
 
-export const KeyInsightsPanel: React.FC<KeyInsightsPanelProps> = ({ insights, onViewAll }) => {
+export const KeyInsightsPanel: React.FC<KeyInsightsPanelProps> = ({ insights, onViewAll, onMaximize }) => {
   const defaultInsights: KeyInsightItem[] = [
     {
       id: '1',
@@ -77,12 +78,23 @@ export const KeyInsightsPanel: React.FC<KeyInsightsPanelProps> = ({ insights, on
             Key Insights
           </h3>
         </div>
-        <button 
-          onClick={onViewAll}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-        >
-          View All
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={onViewAll}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            View All
+          </button>
+          {onMaximize && (
+            <button
+              onClick={onMaximize}
+              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Maximize View"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Insight Items */}

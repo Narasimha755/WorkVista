@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 import pandas as pd
@@ -12,9 +13,15 @@ from app.services.recommendations_service import generate_recommendations
 router = APIRouter()
 
 @router.get("/dashboard")
-def get_dashboard_data(db: Session = Depends(get_db)):
-    employees = db.query(Employee).all()
-    if not employees:
+def get_dashboard_data(
+    department: Optional[str] = None,
+    status: Optional[str] = None,
+    experience_cohort: Optional[str] = None,
+    cohort_grouping: Optional[str] = "department",
+    db: Session = Depends(get_db)
+):
+    all_employees = db.query(Employee).all()
+    if not all_employees:
         return {
             "has_data": False,
             "message": "No employee dataset loaded. Please upload a dataset or load the demo data."
@@ -26,19 +33,46 @@ def get_dashboard_data(db: Session = Depends(get_db)):
     active_model = db.query(ModelRecord).filter(ModelRecord.is_active == True).order_by(ModelRecord.id.desc()).first()
     latest_dataset = db.query(Dataset).order_by(Dataset.id.desc()).first()
 
+    # Filter employees according to query parameters
+    employees = list(all_employees)
+    if department and department != "All":
+        employees = [e for e in employees if e.department and e.department.lower() == department.lower()]
+
+    if status and status != "All":
+        if status == "High":
+            employees = [e for e in employees if e.productivity_score >= 80.0]
+        elif status == "Medium":
+            employees = [e for e in employees if 50.0 <= e.productivity_score < 80.0]
+        elif status == "Low":
+            employees = [e for e in employees if e.productivity_score < 50.0]
+
+    if experience_cohort and experience_cohort != "All":
+        if experience_cohort == "<2y":
+            employees = [e for e in employees if (e.experience or 0) < 2]
+        elif experience_cohort == "2-5y":
+            employees = [e for e in employees if 2 <= (e.experience or 0) < 5]
+        elif experience_cohort == "5-8y":
+            employees = [e for e in employees if 5 <= (e.experience or 0) <= 8]
+        elif experience_cohort == ">8y":
+            employees = [e for e in employees if (e.experience or 0) > 8]
+
+    # If filters result in an empty subset, fall back to all employees
+    if not employees:
+        employees = all_employees
+
     total_emp = len(employees)
     high_count = sum(1 for e in employees if e.productivity_score >= 80.0)
     med_count = sum(1 for e in employees if 50.0 <= e.productivity_score < 80.0)
     low_count = sum(1 for e in employees if e.productivity_score < 50.0)
 
     # Risk level counts (decoupled from performance status)
-    high_risk_count = sum(1 for p in predictions if p.risk_level == "High" or p.risk_score >= 70.0)
-    moderate_risk_count = sum(1 for p in predictions if (p.risk_level == "Moderate" or (30.0 <= p.risk_score < 70.0)))
-    low_risk_count = sum(1 for p in predictions if (p.risk_level == "Low" or p.risk_score < 30.0))
+    high_risk_count = sum(1 for e in employees if (pred_map.get(e.employee_id) and (pred_map[e.employee_id].risk_level == "High" or (pred_map[e.employee_id].risk_score or 0) >= 70.0)))
+    moderate_risk_count = sum(1 for e in employees if (pred_map.get(e.employee_id) and (pred_map[e.employee_id].risk_level == "Moderate" or (30.0 <= (pred_map[e.employee_id].risk_score or 0) < 70.0))))
+    low_risk_count = sum(1 for e in employees if (pred_map.get(e.employee_id) and (pred_map[e.employee_id].risk_level == "Low" or (pred_map[e.employee_id].risk_score or 0) < 30.0)))
 
     avg_current_prod = round(sum(e.productivity_score for e in employees) / max(1, total_emp), 1)
     avg_prev_prod = round(sum(e.previous_productivity for e in employees) / max(1, total_emp), 1)
-    avg_pred_prod = round(sum(p.predicted_productivity for p in predictions) / max(1, len(predictions)), 1) if predictions else avg_current_prod
+    avg_pred_prod = round(sum(pred_map[e.employee_id].predicted_productivity if e.employee_id in pred_map else e.productivity_score for e in employees) / max(1, total_emp), 1)
 
     # Truthful KPIs based on real database records
     # Productivity delta vs baseline cycle
@@ -85,34 +119,80 @@ def get_dashboard_data(db: Session = Depends(get_db)):
         }
     }
 
-    # Data-driven Actual vs Predicted
-    # Check if dataset has genuine dates or is cross-sectional
+    # Data-driven Actual vs Predicted by Selected Cohort Grouping
     has_dates = bool(latest_dataset and latest_dataset.has_dates)
-    if has_dates:
-        # Group by record_date if present
-        actual_vs_predicted = []
-        df_emp = pd.DataFrame([{"date": e.record_date, "actual": e.productivity_score, "predicted": pred_map[e.employee_id].predicted_productivity if e.employee_id in pred_map else e.productivity_score} for e in employees if e.record_date])
-        if not df_emp.empty:
-            grouped = df_emp.groupby("date").mean().reset_index()
-            for _, r in grouped.iterrows():
-                actual_vs_predicted.append({
-                    "label": str(r["date"]),
-                    "actual": round(float(r["actual"]), 1),
-                    "predicted": round(float(r["predicted"]), 1)
-                })
-        else:
-            has_dates = False
+    actual_vs_predicted = []
 
-    if not has_dates:
-        # Honest cross-sectional department comparison
-        actual_vs_predicted = [
-            {
-                "label": d.name,
-                "actual": d.avg_productivity,
-                "predicted": d.predicted_productivity
-            }
-            for d in departments
+    if cohort_grouping == 'experience':
+        cohort_defs = [
+            ('< 2 Yrs', lambda e: (e.experience or 0) < 2),
+            ('2 - 5 Yrs', lambda e: 2 <= (e.experience or 0) < 5),
+            ('5 - 8 Yrs', lambda e: 5 <= (e.experience or 0) <= 8),
+            ('> 8 Yrs', lambda e: (e.experience or 0) > 8),
         ]
+        for name, cond in cohort_defs:
+            cohort_emps = [e for e in employees if cond(e)]
+            if cohort_emps:
+                act = round(sum(e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                prd = round(sum(pred_map[e.employee_id].predicted_productivity if e.employee_id in pred_map else e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                actual_vs_predicted.append({
+                    "label": name,
+                    "actual": act,
+                    "predicted": prd,
+                    "count": len(cohort_emps),
+                    "delta": round(prd - act, 1)
+                })
+    elif cohort_grouping == 'workload':
+        cohort_defs = [
+            ('Light (<35h)', lambda e: (e.workload or 0) < 35),
+            ('Standard (35-42h)', lambda e: 35 <= (e.workload or 0) <= 42),
+            ('Heavy (>42h)', lambda e: (e.workload or 0) > 42),
+        ]
+        for name, cond in cohort_defs:
+            cohort_emps = [e for e in employees if cond(e)]
+            if cohort_emps:
+                act = round(sum(e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                prd = round(sum(pred_map[e.employee_id].predicted_productivity if e.employee_id in pred_map else e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                actual_vs_predicted.append({
+                    "label": name,
+                    "actual": act,
+                    "predicted": prd,
+                    "count": len(cohort_emps),
+                    "delta": round(prd - act, 1)
+                })
+    elif cohort_grouping == 'attendance':
+        cohort_defs = [
+            ('High (>=95%)', lambda e: (e.attendance or 0) >= 95),
+            ('Standard (85-94%)', lambda e: 85 <= (e.attendance or 0) < 95),
+            ('Irregular (<85%)', lambda e: (e.attendance or 0) < 85),
+        ]
+        for name, cond in cohort_defs:
+            cohort_emps = [e for e in employees if cond(e)]
+            if cohort_emps:
+                act = round(sum(e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                prd = round(sum(pred_map[e.employee_id].predicted_productivity if e.employee_id in pred_map else e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                actual_vs_predicted.append({
+                    "label": name,
+                    "actual": act,
+                    "predicted": prd,
+                    "count": len(cohort_emps),
+                    "delta": round(prd - act, 1)
+                })
+    else:
+        # Default: by Department
+        dept_list = sorted(list(set(e.department for e in employees if e.department)))
+        for d_name in dept_list:
+            cohort_emps = [e for e in employees if e.department == d_name]
+            if cohort_emps:
+                act = round(sum(e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                prd = round(sum(pred_map[e.employee_id].predicted_productivity if e.employee_id in pred_map else e.productivity_score for e in cohort_emps) / len(cohort_emps), 1)
+                actual_vs_predicted.append({
+                    "label": d_name,
+                    "actual": act,
+                    "predicted": prd,
+                    "count": len(cohort_emps),
+                    "delta": round(prd - act, 1)
+                })
 
     # Productivity Distribution Donut (Honest categorization)
     high_pct = round((high_count / max(1, total_emp)) * 100.0, 1)

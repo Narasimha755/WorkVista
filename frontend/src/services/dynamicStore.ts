@@ -123,25 +123,86 @@ class DynamicStore {
     });
   }
 
-  public getDashboardData(): DashboardData {
+  public getDashboardData(filters?: {
+    department?: string;
+    status?: string;
+    experience_cohort?: string;
+    cohort_grouping?: 'department' | 'experience' | 'workload' | 'attendance';
+  }): DashboardData {
     this.recalculateCategorizations();
-    const total = this.employees.length;
-    const avgProd = total > 0 ? Number((this.employees.reduce((acc, e) => acc + e.productivity_score, 0) / total).toFixed(1)) : 0;
-    const highPerformers = this.employees.filter(e => e.status === 'High').length;
-    const atRisk = this.employees.filter(e => (e.burnout_risk_score || 0) >= this.settings.risk_threshold).length;
+
+    // 1. Filter employees
+    let activeEmployees = [...this.employees];
+
+    if (filters?.department && filters.department !== 'All Departments' && filters.department !== 'All') {
+      activeEmployees = activeEmployees.filter(e => e.department === filters.department);
+    }
+
+    if (filters?.status && filters.status !== 'All') {
+      activeEmployees = activeEmployees.filter(e => e.status === filters.status);
+    }
+
+    if (filters?.experience_cohort && filters.experience_cohort !== 'All') {
+      if (filters.experience_cohort.includes('<2')) {
+        activeEmployees = activeEmployees.filter(e => e.experience < 2);
+      } else if (filters.experience_cohort.includes('2-5')) {
+        activeEmployees = activeEmployees.filter(e => e.experience >= 2 && e.experience <= 5);
+      } else if (filters.experience_cohort.includes('5-8')) {
+        activeEmployees = activeEmployees.filter(e => e.experience > 5 && e.experience <= 8);
+      } else if (filters.experience_cohort.includes('>8')) {
+        activeEmployees = activeEmployees.filter(e => e.experience > 8);
+      }
+    }
+
+    const total = activeEmployees.length;
+    const allTotal = this.employees.length;
+    const avgProd = total > 0 ? Number((activeEmployees.reduce((acc, e) => acc + e.productivity_score, 0) / total).toFixed(1)) : 0;
+    const highPerformers = activeEmployees.filter(e => e.status === 'High').length;
+    const atRisk = activeEmployees.filter(e => (e.burnout_risk_score || 0) >= this.settings.risk_threshold).length;
 
     const baseDashboard = JSON.parse(JSON.stringify((mockData as any).dashboard || {}));
 
-    baseDashboard.has_data = total > 0;
+    baseDashboard.has_data = allTotal > 0;
+    const isFiltered = total !== allTotal;
+    const subtitleSuffix = isFiltered ? ` (filtered from ${allTotal})` : '';
+
     baseDashboard.kpis = {
-      total_employees: { value: total, display_value: String(total), change_pct: 0, trend: 'neutral' as const, subtitle: `Active workforce records`, sparkline: [] },
-      avg_productivity: { value: avgProd, display_value: `${avgProd}%`, change_pct: 1.4, trend: 'up' as const, subtitle: `+1.1 pts vs baseline`, sparkline: [] },
-      high_performers: { value: highPerformers, display_value: String(highPerformers), change_pct: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), trend: 'up' as const, subtitle: `${Number(((highPerformers / (total || 1)) * 100).toFixed(1))}% of workforce`, sparkline: [] },
-      at_risk: { value: atRisk, display_value: String(atRisk), change_pct: Number(((atRisk / (total || 1)) * 100).toFixed(1)), trend: atRisk > 10 ? 'down' as const : 'neutral' as const, subtitle: `${Number(((atRisk / (total || 1)) * 100).toFixed(1))}% high risk tier`, sparkline: [] }
+      total_employees: { 
+        value: total, 
+        display_value: String(total), 
+        change_pct: 0, 
+        trend: 'neutral' as const, 
+        subtitle: isFiltered ? `Filtered cohort (${total} of ${allTotal})` : `Active workforce records`, 
+        sparkline: [] 
+      },
+      avg_productivity: { 
+        value: avgProd, 
+        display_value: `${avgProd}%`, 
+        change_pct: 1.4, 
+        trend: 'up' as const, 
+        subtitle: `+1.1 pts vs baseline${subtitleSuffix}`, 
+        sparkline: [] 
+      },
+      high_performers: { 
+        value: highPerformers, 
+        display_value: String(highPerformers), 
+        change_pct: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), 
+        trend: 'up' as const, 
+        subtitle: `${Number(((highPerformers / (total || 1)) * 100).toFixed(1))}% of cohort`, 
+        sparkline: [] 
+      },
+      at_risk: { 
+        value: atRisk, 
+        display_value: String(atRisk), 
+        change_pct: Number(((atRisk / (total || 1)) * 100).toFixed(1)), 
+        trend: atRisk > 10 ? 'down' as const : 'neutral' as const, 
+        subtitle: `${Number(((atRisk / (total || 1)) * 100).toFixed(1))}% high risk tier`, 
+        sparkline: [] 
+      }
     };
 
-    const mediumCount = this.employees.filter(e => e.status === 'Medium').length;
-    const lowCount = this.employees.filter(e => e.status === 'Low').length;
+    const mediumCount = activeEmployees.filter(e => e.status === 'Medium').length;
+    const lowCount = activeEmployees.filter(e => e.status === 'Low').length;
 
     baseDashboard.productivity_distribution = [
       { name: `High (>= ${this.settings.high_perf_threshold}%)`, count: highPerformers, percentage: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), color: '#10B981' },
@@ -150,17 +211,116 @@ class DynamicStore {
     ];
     baseDashboard.distribution_total = total;
 
+    // 2. Dynamic Actual vs Predicted by Cohort
+    const grouping = filters?.cohort_grouping || 'department';
+    let cohortSeries: { label: string; actual: number; predicted: number; count: number; delta: number }[] = [];
+
+    const cohortSource = total > 0 ? activeEmployees : this.employees;
+
+    if (grouping === 'department') {
+      const depts = ['Engineering', 'Finance', 'HR', 'Marketing', 'Operations', 'Sales'];
+      cohortSeries = depts.map(d => {
+        const emps = cohortSource.filter(e => e.department === d);
+        const count = emps.length;
+        const act = count ? emps.reduce((a, e) => a + e.productivity_score, 0) / count : 0;
+        const pred = count ? emps.reduce((a, e) => a + (e.predicted_score || e.predicted_productivity || e.productivity_score), 0) / count : 0;
+        return {
+          label: d,
+          actual: Number(act.toFixed(1)),
+          predicted: Number(pred.toFixed(1)),
+          count,
+          delta: Number((pred - act).toFixed(1))
+        };
+      }).filter(item => item.count > 0 || !filters?.department || filters.department === 'All');
+    } else if (grouping === 'experience') {
+      const expRanges = [
+        { label: 'Junior (<2y)', filter: (e: Employee) => e.experience < 2 },
+        { label: 'Mid-level (2-5y)', filter: (e: Employee) => e.experience >= 2 && e.experience <= 5 },
+        { label: 'Senior (5-8y)', filter: (e: Employee) => e.experience > 5 && e.experience <= 8 },
+        { label: 'Lead (>8y)', filter: (e: Employee) => e.experience > 8 }
+      ];
+      cohortSeries = expRanges.map(r => {
+        const emps = cohortSource.filter(r.filter);
+        const count = emps.length;
+        const act = count ? emps.reduce((a, e) => a + e.productivity_score, 0) / count : 0;
+        const pred = count ? emps.reduce((a, e) => a + (e.predicted_score || e.predicted_productivity || e.productivity_score), 0) / count : 0;
+        return {
+          label: r.label,
+          actual: Number(act.toFixed(1)),
+          predicted: Number(pred.toFixed(1)),
+          count,
+          delta: Number((pred - act).toFixed(1))
+        };
+      });
+    } else if (grouping === 'workload') {
+      const wlRanges = [
+        { label: 'Light (<55)', filter: (e: Employee) => e.workload < 55 },
+        { label: 'Optimal (55-70)', filter: (e: Employee) => e.workload >= 55 && e.workload <= 70 },
+        { label: 'Heavy (>70)', filter: (e: Employee) => e.workload > 70 }
+      ];
+      cohortSeries = wlRanges.map(r => {
+        const emps = cohortSource.filter(r.filter);
+        const count = emps.length;
+        const act = count ? emps.reduce((a, e) => a + e.productivity_score, 0) / count : 0;
+        const pred = count ? emps.reduce((a, e) => a + (e.predicted_score || e.predicted_productivity || e.productivity_score), 0) / count : 0;
+        return {
+          label: r.label,
+          actual: Number(act.toFixed(1)),
+          predicted: Number(pred.toFixed(1)),
+          count,
+          delta: Number((pred - act).toFixed(1))
+        };
+      });
+    } else if (grouping === 'attendance') {
+      const attRanges = [
+        { label: 'High (>90%)', filter: (e: Employee) => e.attendance > 90 },
+        { label: 'Standard (80-90%)', filter: (e: Employee) => e.attendance >= 80 && e.attendance <= 90 },
+        { label: 'Irregular (<80%)', filter: (e: Employee) => e.attendance < 80 }
+      ];
+      cohortSeries = attRanges.map(r => {
+        const emps = cohortSource.filter(r.filter);
+        const count = emps.length;
+        const act = count ? emps.reduce((a, e) => a + e.productivity_score, 0) / count : 0;
+        const pred = count ? emps.reduce((a, e) => a + (e.predicted_score || e.predicted_productivity || e.productivity_score), 0) / count : 0;
+        return {
+          label: r.label,
+          actual: Number(act.toFixed(1)),
+          predicted: Number(pred.toFixed(1)),
+          count,
+          delta: Number((pred - act).toFixed(1))
+        };
+      });
+    }
+
+    baseDashboard.actual_vs_predicted = cohortSeries;
+
+    // 3. Department Productivity
+    const deptsAll = ['Engineering', 'Finance', 'HR', 'Marketing', 'Operations', 'Sales'];
+    baseDashboard.department_productivity = deptsAll.map(d => {
+      const emps = this.employees.filter(e => e.department === d);
+      const act = emps.length ? emps.reduce((a, e) => a + e.productivity_score, 0) / emps.length : 0;
+      const pred = emps.length ? emps.reduce((a, e) => a + (e.predicted_score || e.productivity_score), 0) / emps.length : 0;
+      return {
+        department: d,
+        actual: Number(act.toFixed(1)),
+        predicted: Number(pred.toFixed(1))
+      };
+    });
+
     baseDashboard.prediction_engine = {
       ...baseDashboard.prediction_engine,
+      model_name: this.activeModel,
       model_type: this.activeModel,
       r2_score: this.r2Score,
       mae: this.maeScore,
       rmse: this.rmseScore,
-      status: 'Optimal',
-      training_period: `Single period snapshot (${total} records)`
+      status: 'Active',
+      dataset_size: allTotal,
+      training_period: `Single period snapshot (${allTotal} records)`,
+      last_updated: 'Updated just now'
     };
 
-    baseDashboard.recent_employees = this.employees.slice(0, 10).map(e => {
+    baseDashboard.recent_employees = activeEmployees.slice(0, 10).map(e => {
       const predProd = e.predicted_score || e.predicted_productivity || e.productivity_score;
       const changePct = e.prediction_change_pct ?? Number((predProd - e.productivity_score).toFixed(1));
       const riskScore = e.burnout_risk_score || 0;
@@ -279,23 +439,13 @@ class DynamicStore {
     if (payload.medium_perf_threshold) this.settings.medium_perf_threshold = payload.medium_perf_threshold;
     if (payload.risk_threshold) this.settings.risk_threshold = payload.risk_threshold;
 
-    if (payload.model_type === 'GradientBoosting') {
-      this.r2Score = 0.778;
-      this.maeScore = 5.64;
-      this.rmseScore = 7.32;
-    } else if (payload.model_type === 'LinearRidge') {
-      this.r2Score = 0.712;
-      this.maeScore = 6.45;
-      this.rmseScore = 8.35;
-    } else {
-      this.r2Score = 0.752;
-      this.maeScore = 6.08;
-      this.rmseScore = 7.89;
+    if (payload.model_type) {
+      this.setModel(payload.model_type);
     }
 
     this.recalculateCategorizations();
     const highCount = this.employees.filter(e => e.status === 'High').length;
-    const atRiskCount = this.employees.filter(e => e.burnout_risk_score >= this.settings.risk_threshold).length;
+    const atRiskCount = this.employees.filter(e => (e.burnout_risk_score || 0) >= this.settings.risk_threshold).length;
     const avgScore = Number((this.employees.reduce((acc, e) => acc + (e.predicted_score || e.productivity_score), 0) / (this.employees.length || 1)).toFixed(1));
 
     this.auditLogs.unshift({
@@ -323,18 +473,63 @@ class DynamicStore {
     };
   }
 
+  public setModel(modelName: string) {
+    this.activeModel = modelName;
+    if (modelName === 'GradientBoosting') {
+      this.r2Score = 0.782;
+      this.maeScore = 2.05;
+      this.rmseScore = 2.54;
+    } else if (modelName === 'LinearRidge') {
+      this.r2Score = 0.715;
+      this.maeScore = 2.65;
+      this.rmseScore = 3.15;
+    } else {
+      this.activeModel = 'RandomForest';
+      this.r2Score = 0.748;
+      this.maeScore = 2.30;
+      this.rmseScore = 2.82;
+    }
+
+    this.employees.forEach(emp => {
+      let delta = 0;
+      if (modelName === 'GradientBoosting') {
+        delta = (emp.experience * 0.15) + (emp.attendance * 0.015) - 1.2;
+      } else if (modelName === 'LinearRidge') {
+        delta = (emp.workload * 0.03) - 1.8;
+      } else {
+        delta = Number((Math.sin(emp.id) * 1.5).toFixed(1));
+      }
+      const newPred = Math.max(25, Math.min(100, Number((emp.productivity_score + delta).toFixed(1))));
+      emp.predicted_productivity = newPred;
+      emp.predicted_score = newPred;
+      emp.prediction_change_pct = Number((newPred - emp.productivity_score).toFixed(1));
+      if (emp.prediction) {
+        emp.prediction.predicted_productivity = newPred;
+        emp.prediction.change_pct = emp.prediction_change_pct;
+      }
+    });
+
+    this.auditLogs.unshift({
+      id: Date.now(),
+      action: 'MODEL_SWITCH',
+      user: 'NARASIMHA',
+      created_at: new Date().toISOString(),
+      details: `Active estimator switched to ${this.activeModel} (Calibrated R2: ${this.r2Score})`
+    });
+  }
+
   public retrainModel(payload: any) {
-    if (payload.model_type) this.activeModel = payload.model_type;
-    this.r2Score = Number((this.r2Score + 0.012).toFixed(3));
-    this.maeScore = Number((this.maeScore - 0.15).toFixed(2));
-    this.rmseScore = Number((this.rmseScore - 0.20).toFixed(2));
+    if (payload.model_type) this.setModel(payload.model_type);
+    this.r2Score = Number(Math.min(0.92, this.r2Score + 0.015).toFixed(3));
+    this.maeScore = Number(Math.max(1.5, this.maeScore - 0.12).toFixed(2));
+    this.rmseScore = Number(Math.max(2.0, this.rmseScore - 0.15).toFixed(2));
 
     this.auditLogs.unshift({
       id: Date.now(),
       action: 'RETRAIN_MODEL',
       user: 'NARASIMHA',
       created_at: new Date().toISOString(),
-      details: `Retrained estimator: ${this.activeModel} (New R2: ${this.r2Score})`
+      details: `Retrained and recalibrated estimator: ${this.activeModel} (New R2: ${this.r2Score}, MAE: ${this.maeScore})`
     });
 
     return {

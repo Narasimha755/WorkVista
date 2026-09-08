@@ -8,13 +8,15 @@ import {
   CartesianGrid, 
   Tooltip 
 } from 'recharts';
+import { Maximize2 } from 'lucide-react';
 import { DepartmentProductivityItem } from '../../types';
 
 interface DepartmentProductivityChartProps {
   data?: DepartmentProductivityItem[];
+  onMaximize?: () => void;
 }
 
-export const DepartmentProductivityChart: React.FC<DepartmentProductivityChartProps> = ({ data }) => {
+export const DepartmentProductivityChart: React.FC<DepartmentProductivityChartProps> = ({ data, onMaximize }) => {
   const defaultData: DepartmentProductivityItem[] = [
     { department: 'Engineering', actual: 82, predicted: 88 },
     { department: 'Marketing', actual: 68, predicted: 74 },
@@ -37,8 +39,8 @@ export const DepartmentProductivityChart: React.FC<DepartmentProductivityChartPr
           </h3>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 text-xs">
+        {/* Legend & Maximize */}
+        <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-blue-500" />
             <span className="text-slate-600 font-medium">Actual</span>
@@ -47,6 +49,15 @@ export const DepartmentProductivityChart: React.FC<DepartmentProductivityChartPr
             <span className="w-2.5 h-2.5 rounded bg-purple-500" />
             <span className="text-slate-600 font-medium">Predicted</span>
           </div>
+          {onMaximize && (
+            <button
+              onClick={onMaximize}
+              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors ml-1"
+              title="Maximize View"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

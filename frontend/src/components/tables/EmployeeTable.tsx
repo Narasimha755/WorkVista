@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, MoreVertical, ArrowUp, ArrowDown, Eye } from 'lucide-react';
+import { Search, MoreVertical, ArrowUp, ArrowDown, Eye, Maximize2 } from 'lucide-react';
 import { DashboardEmployeeItem } from '../../types';
 
 interface EmployeeTableProps {
@@ -12,6 +12,7 @@ interface EmployeeTableProps {
   onViewEmployee?: (employeeId: string) => void;
   onViewAll?: () => void;
   isFullView?: boolean;
+  onMaximize?: () => void;
 }
 
 export const EmployeeTable: React.FC<EmployeeTableProps> = ({
@@ -23,7 +24,8 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   onSearchChange,
   onViewEmployee,
   onViewAll,
-  isFullView = false
+  isFullView = false,
+  onMaximize
 }) => {
   const defaultEmployees: DashboardEmployeeItem[] = [
     { id: 1, employee_id: 'EMP-1001', employee_name: 'Rahul Sharma', department: 'Engineering', current_productivity: 88, predicted_productivity: 92, change_pct: 4.0, status: 'High', risk_score: 12 },
@@ -129,6 +131,16 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
               className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline shrink-0"
             >
               View All
+            </button>
+          )}
+
+          {onMaximize && (
+            <button
+              onClick={onMaximize}
+              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors ml-0.5"
+              title="Maximize View"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
             </button>
           )}
         </div>

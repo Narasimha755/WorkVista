@@ -1,13 +1,14 @@
 import React from 'react';
-import { Users, BarChart3, Star, AlertTriangle, ArrowUp, ArrowDown, Activity } from 'lucide-react';
+import { Users, BarChart3, Star, AlertTriangle, ArrowUp, ArrowDown, Activity, Maximize2 } from 'lucide-react';
 import { KPICardData } from '../../types';
 
 interface MetricCardProps {
   type: 'total' | 'avg' | 'high' | 'risk';
   data?: KPICardData;
+  onMaximize?: () => void;
 }
 
-export const MetricCard: React.FC<MetricCardProps> = ({ type, data }) => {
+export const MetricCard: React.FC<MetricCardProps> = ({ type, data, onMaximize }) => {
   const configs = {
     total: {
       title: 'Total Employees',
@@ -94,16 +95,27 @@ export const MetricCard: React.FC<MetricCardProps> = ({ type, data }) => {
 
       {/* Right Side Indicator: Sparkline if real data exists, otherwise a clean Status Badge */}
       <div className="shrink-0 flex items-center">
-        {hasRealSparkline ? (
-          <div className="w-24 h-10">
-            {/* SVG sparkline rendered only when real data points exist */}
-          </div>
-        ) : (
-          <div className={`px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide border flex items-center gap-1.5 ${config.badgeColor}`}>
-            <Activity className="w-3 h-3" />
-            <span>Verified</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5">
+          {hasRealSparkline ? (
+            <div className="w-24 h-10">
+              {/* SVG sparkline rendered only when real data points exist */}
+            </div>
+          ) : (
+            <div className={`px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide border flex items-center gap-1.5 ${config.badgeColor}`}>
+              <Activity className="w-3 h-3" />
+              <span>Verified</span>
+            </div>
+          )}
+          {onMaximize && (
+            <button
+              onClick={onMaximize}
+              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Maximize Metric View"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
