@@ -73,20 +73,20 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
   return (
     <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Building2 className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Department Performance</h3>
-            <p className="text-[11px] text-slate-400">Actual vs Predicted productivity benchmark</p>
+            <h3 className="text-sm font-bold text-slate-900 leading-tight">Department Performance</h3>
+            <p className="text-[11px] text-slate-400">Actual vs Predicted benchmark</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           {/* In-Card Sorting Filter */}
-          <div className="hidden sm:flex items-center p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold text-slate-600">
+          <div className="flex items-center p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold text-slate-600">
             <button
               onClick={() => setFilterMode('all')}
               className={`px-2 py-0.5 rounded-md transition-all ${
@@ -105,7 +105,7 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Top Output
+              Top
             </button>
             <button
               onClick={() => setFilterMode('growth')}
@@ -115,19 +115,13 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Growth Gap
+              Growth
             </button>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-sm bg-blue-600" />
-              <span>Actual</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-sm bg-purple-600" />
-              <span>Predicted</span>
-            </span>
+          <div className="hidden xl:flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-600" />Act</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-purple-600" />Pred</span>
           </div>
 
           {onMaximize && (
@@ -144,7 +138,7 @@ export const DepartmentPerformanceBars: React.FC<DepartmentPerformanceBarsProps>
       </div>
 
       {/* Bar Chart with labels on bars */}
-      <div className="h-72 w-full">
+      <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }} barGap={3}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />

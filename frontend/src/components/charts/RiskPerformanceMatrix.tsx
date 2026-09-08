@@ -78,19 +78,19 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
   return (
     <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between h-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+      <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
             <ShieldAlert className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 leading-tight">Risk vs Performance Matrix</h3>
-            <p className="text-[11px] text-slate-400">Employee positioning by burnout risk & productivity</p>
+            <p className="text-[11px] text-slate-400">Burnout risk & productivity positioning</p>
           </div>
         </div>
 
         {/* Quadrant Filters, Legend & Maximize */}
-        <div className="flex flex-wrap items-center gap-2.5 self-end sm:self-auto">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold text-slate-600">
             <button
               onClick={() => setFilterMode('all')}
@@ -100,7 +100,7 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              All Staff ({points.length})
+              All ({points.length})
             </button>
             <button
               onClick={() => setFilterMode('high_risk')}
@@ -110,7 +110,7 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              High Risk
+              Risk
             </button>
             <button
               onClick={() => setFilterMode('safe_stars')}
@@ -120,14 +120,13 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Safe Stars
+              Stars
             </button>
           </div>
 
-          <div className="hidden md:flex items-center gap-2 text-[10px] font-medium text-slate-500">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>Low</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span>Med</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span>High</span>
+          <div className="hidden xl:flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Low</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" />High</span>
           </div>
 
           {onMaximize && (
@@ -144,7 +143,7 @@ export const RiskPerformanceMatrix: React.FC<RiskPerformanceMatrixProps> = ({
       </div>
 
       {/* Scatter Matrix Chart */}
-      <div className="h-72 w-full">
+      <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: -10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />

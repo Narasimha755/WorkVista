@@ -255,67 +255,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
       </div>
 
-      {/* 4. Row 2: 3 Major Analytical Panels (Trend, Health Score, Donut) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* Productivity Trend: Actual vs Predicted (Keep Maximize) */}
-        <div className="lg:col-span-6 flex flex-col">
-          <ProductivityTrendChart
-            data={data.actual_vs_predicted}
-            hasTemporalData={data.has_temporal_data}
-            onMaximize={() => setMaximizedCard('actual_vs_predicted')}
-          />
+      {/* 4. Main Intelligence Workspace & Strategic Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left Primary Analytics Area: 9 cols */}
+        <div className="lg:col-span-9 space-y-4">
+          {/* Row A: Trends & Vital Diagnostics */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+            <div className="md:col-span-6 flex flex-col">
+              <ProductivityTrendChart
+                data={data.actual_vs_predicted}
+                hasTemporalData={data.has_temporal_data}
+                onMaximize={() => setMaximizedCard('actual_vs_predicted')}
+              />
+            </div>
+            <div className="sm:col-span-6 md:col-span-3 flex flex-col">
+              <WorkforceHealthGauge
+                data={healthData}
+              />
+            </div>
+            <div className="sm:col-span-6 md:col-span-3 flex flex-col">
+              <ProductivityDistributionDonut
+                data={data.productivity_distribution}
+                totalEmployees={data.distribution_total || kpis?.total_employees?.value || 520}
+              />
+            </div>
+          </div>
+
+          {/* Row B: Dual Core Grids - Same Exact Size (50% / 50%) with Prominent Maximize */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+            <div className="flex flex-col h-full">
+              <DepartmentPerformanceBars
+                data={data.department_productivity}
+                onMaximize={() => setMaximizedCard('department')}
+              />
+            </div>
+            <div className="flex flex-col h-full">
+              <RiskPerformanceMatrix
+                data={data.risk_matrix}
+                onViewEmployee={onViewEmployee}
+                onMaximize={() => setMaximizedCard('risk_matrix')}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Workforce Health Score */}
-        <div className="sm:col-span-6 lg:col-span-3 flex flex-col">
-          <WorkforceHealthGauge
-            data={healthData}
-          />
-        </div>
-
-        {/* Productivity Distribution Donut */}
-        <div className="sm:col-span-6 lg:col-span-3 flex flex-col">
-          <ProductivityDistributionDonut
-            data={data.productivity_distribution}
-            totalEmployees={data.distribution_total || kpis?.total_employees?.value || 520}
-          />
-        </div>
-      </div>
-
-      {/* 5. Row 3: Dual Intelligence Panels - Same Exact Size (50% / 50%) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-        {/* Department Performance Bar Chart */}
-        <div className="flex flex-col h-full">
-          <DepartmentPerformanceBars
-            data={data.department_productivity}
-            onMaximize={() => setMaximizedCard('department')}
-          />
-        </div>
-
-        {/* Risk vs Performance Matrix */}
-        <div className="flex flex-col h-full">
-          <RiskPerformanceMatrix
-            data={data.risk_matrix}
-            onViewEmployee={onViewEmployee}
-            onMaximize={() => setMaximizedCard('risk_matrix')}
-          />
-        </div>
-      </div>
-
-      {/* 6. Row 4: Strategic Intelligence & Action Stream */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
-        <div className="flex flex-col h-full">
+        {/* Right Strategic Intelligence Sidebar: 3 cols */}
+        <div className="lg:col-span-3 space-y-4 flex flex-col">
           <KeyInsightsPanel
             insights={data.key_insights}
           />
-        </div>
-        <div className="flex flex-col h-full">
           <RecommendedActionsPanel
             actions={data.recommended_actions}
             onActionClick={onActionClick}
           />
-        </div>
-        <div className="flex flex-col h-full">
           <QuickFiltersWidget
             onApplyFilters={(filters) => {
               if (filters.department) handleDepartmentFilterChange(filters.department);
@@ -326,7 +318,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* 7. Row 5: Employee Predictions / Intelligence Table */}
+      {/* 5. Employee Predictions / Intelligence Table (Full Width) */}
       <div>
         <EmployeeTable
           employees={data.recent_employees}
