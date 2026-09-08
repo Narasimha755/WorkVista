@@ -1,21 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   LayoutDashboard, 
   Users, 
   Sparkles, 
   BarChart3, 
   Building2, 
-  ShieldAlert,
+  ShieldAlert, 
   FileText, 
   Gauge, 
-  Database,
-  Activity as ActivityIcon,
+  Database, 
+  Activity as ActivityIcon, 
   Settings, 
-  ChevronRight,
-  ChevronLeft,
-  Zap,
-  HelpCircle,
-  Circle
+  MessageSquare,
+  Hexagon
 } from 'lucide-react';
 
 export type NavTab = 
@@ -24,165 +21,130 @@ export type NavTab =
   | 'predictions' 
   | 'analytics' 
   | 'departments' 
-  | 'risk-intelligence'
+  | 'risk-intelligence' 
   | 'reports' 
   | 'model-performance' 
-  | 'data-studio'
-  | 'activity'
+  | 'data-studio' 
+  | 'activity' 
   | 'settings';
 
 interface SidebarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
+  onOpenCopilot?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => {
-  const [collapsed, setCollapsed] = useState(false);
-
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, onOpenCopilot }) => {
   const navItems = [
-    { id: 'dashboard' as NavTab, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'employees' as NavTab, label: 'Employees', icon: Users },
-    { id: 'predictions' as NavTab, label: 'Predictions', icon: Sparkles },
-    { id: 'analytics' as NavTab, label: 'Analytics', icon: BarChart3 },
-    { id: 'departments' as NavTab, label: 'Departments', icon: Building2 },
-    { id: 'risk-intelligence' as NavTab, label: 'Risk Intelligence', icon: ShieldAlert },
-    { id: 'reports' as NavTab, label: 'Reports', icon: FileText },
-    { id: 'model-performance' as NavTab, label: 'Model Performance', icon: Gauge },
-    { id: 'data-studio' as NavTab, label: 'Data Studio', icon: Database },
-    { id: 'activity' as NavTab, label: 'Activity', icon: ActivityIcon },
-    { id: 'settings' as NavTab, label: 'Settings', icon: Settings },
+    { id: 'dashboard' as NavTab, label: 'Command Center', icon: LayoutDashboard },
+    { id: 'risk-intelligence' as NavTab, label: 'Multivariate Risk Topology', icon: ShieldAlert },
+    { id: 'employees' as NavTab, label: 'Workforce 360° Matrix', icon: Users },
+    { id: 'analytics' as NavTab, label: 'Strategic Analytics', icon: BarChart3 },
+    { id: 'departments' as NavTab, label: 'Departmental Breakdown', icon: Building2 },
+    { id: 'predictions' as NavTab, label: 'Predictive Intelligence', icon: Sparkles },
+    { id: 'reports' as NavTab, label: 'Executive Intelligence Reports', icon: FileText },
+    { id: 'model-performance' as NavTab, label: 'Neural Drift & Models', icon: Gauge },
+    { id: 'data-studio' as NavTab, label: 'Data Studio & Ingestion', icon: Database },
+    { id: 'activity' as NavTab, label: 'Enterprise Audit Trail', icon: ActivityIcon },
   ];
 
   return (
-    <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-[#0B1120] text-slate-300 flex flex-col justify-between shrink-0 min-h-screen border-r border-slate-800/60 select-none transition-all duration-300`}>
-      {/* Brand Header */}
-      <div>
-        <div className="p-5 pb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
-              <Zap className="w-5 h-5 text-white fill-white/20" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5 leading-none">
-                  WorkVista
-                </h1>
-                <p className="text-[10px] tracking-wide text-slate-400 font-medium mt-1">
-                  Workforce Intelligence
-                </p>
-              </div>
-            )}
-          </div>
-          <button 
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 transition-colors"
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
+    <aside className="w-16 bg-[#050811] text-slate-400 flex flex-col justify-between shrink-0 min-h-screen border-r border-cyan-500/15 z-40 select-none py-3.5 items-center">
+      {/* Top Logo / Hexagon Icon */}
+      <div className="flex flex-col items-center gap-4">
+        <button
+          onClick={() => onSelectTab('dashboard')}
+          className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-400/50 hover:scale-105 transition-all group relative"
+          title="WorkVista Cognition Command"
+        >
+          <Hexagon className="w-5 h-5 text-cyan-200 animate-pulse" />
+          <span className="absolute left-16 px-2.5 py-1 bg-[#0A1020] border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-50">
+            WorkVista Cognition
+          </span>
+        </button>
 
-        {/* Navigation items */}
-        <nav className="px-3 space-y-1 mt-2">
+        {/* Primary Nav Stack */}
+        <nav className="flex flex-col items-center gap-1.5 mt-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => onSelectTab(item.id)}
-                title={collapsed ? item.label : undefined}
-                className={`w-full flex items-center ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3.5 px-3.5 py-2.5'} rounded-xl font-medium text-sm transition-all duration-150 ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
-                }`}
-              >
-                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-white' : 'text-slate-400'}`} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-              </button>
+              <div key={item.id} className="relative group">
+                <button
+                  onClick={() => onSelectTab(item.id)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 relative ${
+                    isActive
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,240,255,0.35)]'
+                      : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-900/80 hover:border hover:border-cyan-500/20'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 transition-transform duration-200 ${isActive ? 'scale-110 text-cyan-300' : ''}`} />
+                  {isActive && (
+                    <span className="absolute left-0 top-2 bottom-2 w-1 bg-cyan-400 rounded-r-full shadow-[0_0_8px_#00f0ff]" />
+                  )}
+                </button>
+
+                {/* Floating Tooltip */}
+                <span className="absolute left-14 top-1.5 px-2.5 py-1 bg-[#0C1224] border border-cyan-500/30 text-slate-200 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
+                  {item.label}
+                </span>
+              </div>
             );
           })}
         </nav>
       </div>
 
-      {/* Footer Area */}
-      <div className="p-3 space-y-3">
-        {/* Promotional Brand Slogan Card */}
-        {!collapsed && (
-          <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950/40 border border-slate-800/80 relative overflow-hidden">
-            <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-blue-500/10 rounded-full blur-xl pointer-events-none" />
-            <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mb-0.5">
-              Workforce Intelligence
-            </p>
-            <p className="text-xs font-medium text-slate-200 leading-snug">
-              Smarter People. Stronger Organizations.
-            </p>
+      {/* Bottom Actions: Copilot Launcher, Settings & User Avatar */}
+      <div className="flex flex-col items-center gap-2 pt-2 border-t border-cyan-500/10 w-full px-2">
+        {/* WorkVista AI Copilot Button with Pulsing Red Notification Dot */}
+        {onOpenCopilot && (
+          <div className="relative group">
+            <button
+              onClick={onOpenCopilot}
+              className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-950/40 to-indigo-950/40 border border-pink-500/30 text-pink-300 hover:text-pink-200 hover:border-pink-400 hover:shadow-[0_0_15px_rgba(244,63,94,0.35)] flex items-center justify-center transition-all relative"
+              title="Open WorkVista AI Copilot"
+            >
+              <MessageSquare className="w-4 h-4 text-pink-400" />
+              {/* Red notification dot */}
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_6px_#f43f5e]" />
+            </button>
+            <span className="absolute left-14 top-1.5 px-2.5 py-1 bg-[#0C1224] border border-pink-500/30 text-pink-300 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
+              WorkVista AI Copilot (Ctrl+K)
+            </span>
           </div>
         )}
 
-        {/* System Status & Help */}
-        <div className="space-y-1 pt-2 border-t border-slate-800/70 text-xs">
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between px-2'} py-1 text-slate-400 hover:text-slate-200 cursor-pointer`}>
-            {!collapsed ? (
-              <>
-                <span className="flex items-center gap-2">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  <span>Help & Support</span>
-                </span>
-                <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">v2.0</span>
-              </>
-            ) : (
-              <span title="Help & Support">
-                <HelpCircle className="w-4 h-4" />
-              </span>
-            )}
-          </div>
-          
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between px-2'} py-1 text-slate-400`}>
-            {!collapsed ? (
-              <>
-                <span className="flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span className="text-[11px] text-slate-300">All Systems Operational</span>
-                </span>
-              </>
-            ) : (
-              <span className="relative flex h-2.5 w-2.5" title="All Systems Operational">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-            )}
-          </div>
+        {/* Settings Tab */}
+        <div className="relative group">
+          <button
+            onClick={() => onSelectTab('settings')}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              currentTab === 'settings'
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,240,255,0.35)]'
+                : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-900/80 hover:border hover:border-cyan-500/20'
+            }`}
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <span className="absolute left-14 top-1.5 px-2.5 py-1 bg-[#0C1224] border border-cyan-500/30 text-slate-200 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
+            System Settings
+          </span>
         </div>
 
-        {/* User Profile */}
-        <div className="pt-2 border-t border-slate-800/70">
+        {/* User Profile Avatar with Online Ring */}
+        <div className="relative group pt-1">
           <div 
             onClick={() => onSelectTab('settings')}
-            className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} p-2 rounded-xl hover:bg-slate-800/50 transition-colors cursor-pointer group`}
-            title="NARASIMHA (HR Analytics)"
+            className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-900/60 to-slate-900 border border-cyan-500/30 flex items-center justify-center text-cyan-300 text-xs font-mono font-bold cursor-pointer hover:border-cyan-400 transition-all relative"
+            title="Narasimha (Architect)"
           >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 text-xs font-bold shrink-0">
-                NA
-              </div>
-              {!collapsed && (
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors truncate">
-                    NARASIMHA
-                  </div>
-                  <div className="text-[10px] text-slate-400 truncate">
-                    HR Analytics · Administrator
-                  </div>
-                </div>
-              )}
-            </div>
-            {!collapsed && <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors shrink-0" />}
+            NA
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#050811] shadow-[0_0_6px_#10b981]" />
           </div>
+          <span className="absolute left-14 bottom-1 px-2.5 py-1 bg-[#0C1224] border border-cyan-500/30 text-slate-200 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
+            Narasimha · Administrator
+          </span>
         </div>
       </div>
     </aside>

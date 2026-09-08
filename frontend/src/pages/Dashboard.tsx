@@ -241,59 +241,94 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* ========================================================================= */}
       {/* 1. TOP HEADER: Intelligent Enterprise Command Center matching reference */}
       {/* ========================================================================= */}
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-1 border-b border-cyan-500/15 relative z-10">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-3 border-b border-cyan-500/15 relative z-10">
         {/* Brand Left */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-400/40">
-            <Brain className="w-6 h-6 animate-pulse" />
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(0,240,255,0.45)] border border-cyan-400/50">
+            <Brain className="w-6 h-6 text-cyan-200 animate-pulse" />
           </div>
           <div>
-            <div className="text-[10px] font-mono uppercase font-black tracking-widest text-cyan-400">
-              WorkVista Cognition Command
+            <div className="text-[10px] font-mono uppercase font-black tracking-widest text-cyan-400 flex items-center gap-2">
+              <span>WORKVISTA COGNITION COMMAND</span>
+              <span className="text-slate-600">//</span>
+              <span className="text-slate-400">TIER-1 AI SURVEILLANCE & PREDICTIVE DRIFT MESH</span>
             </div>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]">
               Intelligent Enterprise Command Center
             </h1>
             <p className="text-[11px] text-slate-400">
-              Enterprise Neural Overview (v3.2) &bull; Real-Time Cognitive Analytics & Risk Topology
+              Enterprise Neural Overview (v3.2) &bull; Real-Time Cognitive Analytics & Multivariate Risk Topology
             </p>
           </div>
         </div>
 
         {/* Center-Right: Natural Language Query box & Quick Actions */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Real-time Status Badges */}
+          <div className="hidden 2xl:flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0C1224] border border-emerald-500/30 text-emerald-400 text-[11px] font-mono font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span>LIVE TELEMETRY</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0C1224] border border-cyan-500/30 text-cyan-400 text-[11px] font-mono font-semibold">
+              <span>LATENCY: 14MS</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0C1224] border border-indigo-500/30 text-indigo-300 text-[11px] font-mono font-semibold">
+              <span>RESILIENT</span>
+            </div>
+          </div>
+
           {/* Integrated Natural Language Query Bar matching reference */}
-          <form onSubmit={handleNlQuerySubmit} className="relative flex items-center w-full sm:w-80 md:w-96">
+          <form onSubmit={handleNlQuerySubmit} className="relative flex items-center w-full sm:w-72 md:w-80">
             <input
               type="text"
               value={nlQuery}
               onChange={(e) => setNlQuery(e.target.value)}
-              placeholder="Natural Language Query for quick needed..."
-              className="w-full pl-4 pr-10 py-2 bg-[#0C1224]/90 border border-cyan-500/30 hover:border-cyan-400/60 focus:border-cyan-400 rounded-xl text-xs text-white placeholder-slate-400 shadow-[0_0_12px_rgba(0,240,255,0.1)] outline-none transition-all"
+              placeholder="Describe simulation or query telemetry..."
+              className="w-full pl-3.5 pr-9 py-1.5 bg-[#0C1224]/90 border border-cyan-500/30 hover:border-cyan-400/60 focus:border-cyan-400 rounded-xl text-xs text-white placeholder-slate-400 shadow-[0_0_12px_rgba(0,240,255,0.1)] outline-none transition-all font-sans"
             />
             <button
               type="submit"
-              className="absolute right-2.5 text-slate-400 hover:text-cyan-400 transition-colors"
+              className="absolute right-2 text-slate-400 hover:text-cyan-400 transition-colors"
               title="Execute Copilot inquiry"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-3.5 h-3.5" />
             </button>
           </form>
 
           {/* AI Model Status Badge */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0C1224] border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold shadow-xs">
+          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#0C1224] border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>{data.active_model_name || 'Random Forest v1.2'}</span>
+            <span>{data.active_model_name || 'Vista-Synapse-v4'}</span>
           </div>
+
+          {/* Quick Actions */}
+          <button
+            onClick={onLoadDemo}
+            className="flex items-center gap-1 px-3 py-1.5 bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/30 text-cyan-300 rounded-xl text-xs font-bold transition-all shadow-[0_0_8px_rgba(0,240,255,0.15)] active:scale-95"
+            title="Reload 520 Employee Dataset"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>520 Staff</span>
+          </button>
+
+          <button
+            onClick={onOpenUpload}
+            className="flex items-center gap-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all active:scale-95"
+            title="Upload CSV Telemetry"
+          >
+            <UploadCloud className="w-3.5 h-3.5 text-slate-400" />
+            <span>Upload</span>
+          </button>
 
           {/* Quick Scenario Simulator Trigger */}
           {onOpenScenarioPlanner && (
             <button
               onClick={() => onOpenScenarioPlanner('All')}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold transition-all shadow-[0_0_8px_rgba(245,158,11,0.2)] active:scale-95"
+              className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold transition-all shadow-[0_0_8px_rgba(245,158,11,0.2)] active:scale-95"
             >
               <Sliders className="w-3.5 h-3.5 text-amber-400" />
-              <span>Simulate Policy</span>
+              <span>Simulate</span>
             </button>
           )}
 
@@ -301,7 +336,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {onOpenCompare && (
             <button
               onClick={onOpenCompare}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 rounded-xl text-xs font-bold transition-all shadow-[0_0_8px_rgba(59,130,246,0.2)] active:scale-95"
+              className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 rounded-xl text-xs font-bold transition-all shadow-[0_0_8px_rgba(59,130,246,0.2)] active:scale-95"
             >
               <GitCompare className="w-3.5 h-3.5 text-blue-400" />
               <span>Compare</span>
@@ -311,11 +346,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Export telemetry */}
           <button
             onClick={() => api.triggerExportCsv()}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-[0_0_12px_rgba(0,240,255,0.3)] active:scale-95"
+            className="flex items-center gap-1 px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-[0_0_12px_rgba(0,240,255,0.3)] active:scale-95"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export</span>
           </button>
+
+          {/* User Profile Avatar with Online Ring */}
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-900/60 to-slate-900 border border-cyan-500/40 flex items-center justify-center text-cyan-300 text-xs font-mono font-bold relative shadow-xs shrink-0 cursor-pointer">
+            NA
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-[#070C18] shadow-[0_0_6px_#10b981]" />
+          </div>
         </div>
       </div>
 

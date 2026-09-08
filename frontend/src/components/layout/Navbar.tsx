@@ -37,26 +37,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('01 Sep 2026 – 30 Sep 2026');
 
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
-    }
-    return false;
-  });
+  const isDark = true;
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
-
-  const toggleDarkMode = () => {
-    setIsDark(prev => !prev);
-  };
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  }, []);
 
   const ranges = [
     '01 Sep 2026 – 30 Sep 2026',
@@ -66,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="px-6 py-3.5 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors duration-200">
+    <header className="px-6 py-3 bg-[#070C18]/95 backdrop-blur-md border-b border-cyan-500/20 sticky top-0 z-30 shadow-lg text-white">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         {/* Global Search Input with Ctrl+K shortcut */}
         <div className="flex-1 max-w-md">
@@ -144,15 +130,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
-            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label="Toggle dark mode"
+          {/* Cyber Status Indicator */}
+          <div 
+            className="p-2 text-cyan-400 bg-cyan-950/40 rounded-xl border border-cyan-500/30 shadow-[0_0_8px_rgba(0,240,255,0.2)]"
+            title="Permanent High-Tech Command Cyber Theme"
           >
-            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
-          </button>
+            <Moon className="w-4 h-4 text-cyan-400" />
+          </div>
 
           {/* Notifications Center */}
           <NotificationDropdown onNavigateToTab={onNavigateToTab} />
