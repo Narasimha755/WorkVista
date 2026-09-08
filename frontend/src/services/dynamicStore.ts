@@ -53,8 +53,35 @@ class DynamicStore {
   }
 
   public resetToInitial() {
-    const rawItems = ((mockData as any).employees?.items || []) as Employee[];
-    this.employees = JSON.parse(JSON.stringify(rawItems));
+    const rawItems = ((mockData as any).employees?.items || []) as any[];
+    this.employees = rawItems.map(item => {
+      const pred = item.prediction || {};
+      const riskScore = item.burnout_risk_score ?? pred.risk_score ?? 20;
+      const predProd = item.predicted_productivity ?? item.predicted_score ?? pred.predicted_productivity ?? item.productivity_score;
+      const changePct = item.prediction_change_pct ?? pred.change_pct ?? Number((predProd - item.productivity_score).toFixed(1));
+      const status = item.status ?? pred.status ?? item.performance_rating ?? (item.productivity_score >= 80 ? 'High' : item.productivity_score >= 50 ? 'Medium' : 'Low');
+      const riskLevel = item.risk_level ?? pred.risk_level ?? (riskScore >= 70 ? 'High Risk' : riskScore >= 30 ? 'Moderate Risk' : 'Low Risk');
+
+      return {
+        ...item,
+        employee_name: item.employee_name || item.full_name || 'Employee',
+        full_name: item.full_name || item.employee_name || 'Employee',
+        predicted_score: predProd,
+        predicted_productivity: predProd,
+        prediction_change_pct: changePct,
+        burnout_risk_score: riskScore,
+        status,
+        risk_level: riskLevel,
+        prediction: {
+          predicted_productivity: predProd,
+          change_pct: changePct,
+          status,
+          risk_level: riskLevel,
+          risk_score: riskScore,
+          confidence_score: pred.confidence_score || 85
+        }
+      };
+    });
     this.reports = JSON.parse(JSON.stringify((mockData as any).reports || []));
     this.auditLogs = [
       { id: 1, action: 'SYSTEM_BOOT', user: 'NARASIMHA', created_at: new Date().toISOString(), details: 'WorkVista AI Platform online with 520 employee records' },
@@ -78,13 +105,20 @@ class DynamicStore {
         emp.status = 'Low';
       }
 
-      const riskScore = emp.burnout_risk_score || 0;
+      const riskScore = emp.burnout_risk_score ?? (emp as any).prediction?.risk_score ?? 0;
+      emp.burnout_risk_score = riskScore;
       if (riskScore >= riskThresh) {
         emp.risk_level = 'High Risk';
       } else if (riskScore >= 30) {
         emp.risk_level = 'Moderate Risk';
       } else {
         emp.risk_level = 'Low Risk';
+      }
+
+      if (emp.prediction) {
+        emp.prediction.status = emp.status;
+        emp.prediction.risk_level = emp.risk_level;
+        emp.prediction.risk_score = riskScore;
       }
     });
   }
@@ -100,19 +134,19 @@ class DynamicStore {
 
     baseDashboard.has_data = total > 0;
     baseDashboard.kpis = {
-      total_employees: { value: total, delta: 0.0, trend: 'neutral' as const, subtitle: `${total} active profiles` },
-      avg_productivity: { value: avgProd, delta: 1.8, trend: 'up' as const, subtitle: 'Across all cohorts' },
-      high_performers: { value: highPerformers, delta: 2.4, trend: 'up' as const, subtitle: `${Number(((highPerformers / (total || 1)) * 100).toFixed(1))}% of workforce` },
-      at_risk: { value: atRisk, delta: -0.8, trend: 'down' as const, subtitle: `${Number(((atRisk / (total || 1)) * 100).toFixed(1))}% of workforce` }
+      total_employees: { value: total, display_value: String(total), change_pct: 0, trend: 'neutral' as const, subtitle: `Active workforce records`, sparkline: [] },
+      avg_productivity: { value: avgProd, display_value: `${avgProd}%`, change_pct: 1.4, trend: 'up' as const, subtitle: `+1.1 pts vs baseline`, sparkline: [] },
+      high_performers: { value: highPerformers, display_value: String(highPerformers), change_pct: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), trend: 'up' as const, subtitle: `${Number(((highPerformers / (total || 1)) * 100).toFixed(1))}% of workforce`, sparkline: [] },
+      at_risk: { value: atRisk, display_value: String(atRisk), change_pct: Number(((atRisk / (total || 1)) * 100).toFixed(1)), trend: atRisk > 10 ? 'down' as const : 'neutral' as const, subtitle: `${Number(((atRisk / (total || 1)) * 100).toFixed(1))}% high risk tier`, sparkline: [] }
     };
 
     const mediumCount = this.employees.filter(e => e.status === 'Medium').length;
     const lowCount = this.employees.filter(e => e.status === 'Low').length;
 
     baseDashboard.productivity_distribution = [
-      { name: `High (>= ${this.settings.high_perf_threshold}%)`, value: highPerformers, percentage: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), color: '#10B981' },
-      { name: `Medium (${this.settings.medium_perf_threshold}-${this.settings.high_perf_threshold - 1}%)`, value: mediumCount, percentage: Number(((mediumCount / (total || 1)) * 100).toFixed(1)), color: '#3B82F6' },
-      { name: `Low (< ${this.settings.medium_perf_threshold}%)`, value: lowCount, percentage: Number(((lowCount / (total || 1)) * 100).toFixed(1)), color: '#EF4444' }
+      { name: `High (>= ${this.settings.high_perf_threshold}%)`, count: highPerformers, percentage: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), color: '#10B981' },
+      { name: `Medium (${this.settings.medium_perf_threshold}-${this.settings.high_perf_threshold - 1}%)`, count: mediumCount, percentage: Number(((mediumCount / (total || 1)) * 100).toFixed(1)), color: '#3B82F6' },
+      { name: `Low (< ${this.settings.medium_perf_threshold}%)`, count: lowCount, percentage: Number(((lowCount / (total || 1)) * 100).toFixed(1)), color: '#EF4444' }
     ];
     baseDashboard.distribution_total = total;
 
@@ -126,7 +160,25 @@ class DynamicStore {
       training_period: `Single period snapshot (${total} records)`
     };
 
-    baseDashboard.recent_employees = this.employees.slice(0, 5);
+    baseDashboard.recent_employees = this.employees.slice(0, 10).map(e => {
+      const predProd = e.predicted_score || e.predicted_productivity || e.productivity_score;
+      const changePct = e.prediction_change_pct ?? Number((predProd - e.productivity_score).toFixed(1));
+      const riskScore = e.burnout_risk_score || 0;
+      let status: 'High' | 'Medium' | 'At Risk' = 'Medium';
+      if (e.productivity_score >= this.settings.high_perf_threshold) status = 'High';
+      else if (riskScore >= this.settings.risk_threshold) status = 'At Risk';
+      return {
+        id: e.id,
+        employee_id: e.employee_id,
+        employee_name: e.full_name || e.employee_name,
+        department: e.department,
+        current_productivity: Number(e.productivity_score.toFixed(1)),
+        predicted_productivity: Number(predProd.toFixed(1)),
+        change_pct: Number(changePct.toFixed(1)),
+        status,
+        risk_score: Number(riskScore.toFixed(1))
+      };
+    });
     return baseDashboard;
   }
 
@@ -397,6 +449,14 @@ class DynamicStore {
         performance_rating: prod >= this.settings.high_perf_threshold ? 'High' : prod >= this.settings.medium_perf_threshold ? 'Medium' : 'Low',
         status: prod >= this.settings.high_perf_threshold ? 'High' : prod >= this.settings.medium_perf_threshold ? 'Medium' : 'Low',
         risk_level: risk >= this.settings.risk_threshold ? 'High Risk' : risk >= 30 ? 'Moderate Risk' : 'Low Risk',
+        prediction: {
+          predicted_productivity: predScore,
+          change_pct: delta,
+          status: prod >= this.settings.high_perf_threshold ? 'High' : prod >= this.settings.medium_perf_threshold ? 'Medium' : 'Low',
+          risk_level: risk >= this.settings.risk_threshold ? 'High Risk' : risk >= 30 ? 'Moderate Risk' : 'Low Risk',
+          risk_score: risk,
+          confidence_score: 85
+        },
         created_at: new Date().toISOString()
       });
     }
