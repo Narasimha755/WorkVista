@@ -6,12 +6,14 @@ import { ProductivityDistributionItem } from '../../types';
 interface ProductivityDistributionDonutProps {
   data?: ProductivityDistributionItem[];
   total?: number;
+  totalEmployees?: number;
   onMaximize?: () => void;
 }
 
 export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDonutProps> = ({ 
   data, 
-  total = 256,
+  total,
+  totalEmployees,
   onMaximize
 }) => {
   const defaultData: ProductivityDistributionItem[] = [
@@ -21,7 +23,7 @@ export const ProductivityDistributionDonut: React.FC<ProductivityDistributionDon
   ];
 
   const chartData = data && data.length > 0 ? data : defaultData;
-  const totalCount = total || chartData.reduce((acc, item) => acc + item.count, 0);
+  const totalCount = totalEmployees || total || chartData.reduce((acc, item) => acc + item.count, 0) || 520;
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between h-[360px]">

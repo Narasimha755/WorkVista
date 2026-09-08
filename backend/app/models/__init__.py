@@ -9,7 +9,8 @@ from app.models.base import (
     ModelRecord,
     Report,
     Setting,
-    AuditLog
+    AuditLog,
+    Notification
 )
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     "ModelRecord",
     "Report",
     "Setting",
-    "AuditLog"
+    "AuditLog",
+    "Notification"
 ]

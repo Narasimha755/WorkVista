@@ -9,8 +9,12 @@ import { DepartmentsPage } from './pages/Departments';
 import { ReportsPage } from './pages/Reports';
 import { ModelPerformancePage } from './pages/ModelPerformance';
 import { SettingsPage } from './pages/Settings';
+import { RiskIntelligencePage } from './pages/RiskIntelligence';
+import { DataStudioPage } from './pages/DataStudio';
+import { ActivityPage } from './pages/Activity';
 import { UploadModal } from './components/modals/UploadModal';
 import { EmployeeDetailModal } from './components/modals/EmployeeDetailModal';
+import { SearchModal } from './components/modals/SearchModal';
 import { DashboardData, RecommendedActionItem } from './types';
 import { api } from './services/api';
 
@@ -23,6 +27,7 @@ export const App: React.FC = () => {
   
   // Modals
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
   // Global search
@@ -42,6 +47,17 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadDashboard();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleRefresh = () => {
@@ -91,6 +107,8 @@ export const App: React.FC = () => {
             api.triggerExportCsv();
           }}
           onRefresh={handleRefresh}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          onNavigateToTab={(tab) => setCurrentTab(tab as NavTab)}
           isRefreshing={isRefreshing}
           isLoadingDemo={isLoadingDemo}
           searchQuery={searchQuery}
@@ -125,6 +143,12 @@ export const App: React.FC = () => {
             />
           )}
 
+          {currentTab === 'risk-intelligence' && (
+            <RiskIntelligencePage 
+              onViewEmployee={(id) => setSelectedEmployeeId(id)}
+            />
+          )}
+
           {currentTab === 'predictions' && (
             <PredictionsPage
               onViewEmployees={() => setCurrentTab('employees')}
@@ -139,8 +163,19 @@ export const App: React.FC = () => {
             <DepartmentsPage />
           )}
 
+          {currentTab === 'data-studio' && (
+            <DataStudioPage 
+              onOpenUpload={() => setIsUploadOpen(true)}
+              onRefreshDashboard={loadDashboard}
+            />
+          )}
+
           {currentTab === 'reports' && (
             <ReportsPage />
+          )}
+
+          {currentTab === 'activity' && (
+            <ActivityPage />
           )}
 
           {currentTab === 'model-performance' && (
@@ -166,6 +201,14 @@ export const App: React.FC = () => {
       <EmployeeDetailModal
         employeeId={selectedEmployeeId}
         onClose={() => setSelectedEmployeeId(null)}
+      />
+
+      {/* Global Command/Search Modal (Ctrl+K) */}
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelectEmployee={(id) => setSelectedEmployeeId(id)}
+        onSelectTab={(tab) => setCurrentTab(tab as NavTab)}
       />
     </div>
   );

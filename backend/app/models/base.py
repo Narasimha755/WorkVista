@@ -179,3 +179,13 @@ class AuditLog(Base):
     details = Column(Text, default="")
     user = Column(String(100), default="NARASIMHA")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    category = Column(String(50), default="info")  # info, warning, success, risk
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -78,6 +78,58 @@ export interface DashboardEmployeeItem {
   change_pct: number;
   status: 'High' | 'Medium' | 'At Risk';
   risk_score: number;
+  confidence_score?: number;
+  last_updated?: string;
+  role?: string;
+}
+
+export interface WorkforceHealthBreakdown {
+  productivity: number;
+  engagement: number;
+  attendance: number;
+  workload_balance: number;
+  risk_level_pct: number;
+  risk_level_label: string;
+}
+
+export interface WorkforceHealthData {
+  score: number;
+  status: 'Excellent' | 'Healthy' | 'Watch' | 'Critical' | string;
+  breakdown: WorkforceHealthBreakdown;
+}
+
+export interface RiskMatrixPoint {
+  id: number;
+  employee_id: string;
+  employee_name: string;
+  department: string;
+  role?: string;
+  productivity: number;
+  risk_score: number;
+  risk_level: 'Low' | 'Moderate' | 'High' | 'Critical' | string;
+  predicted: number;
+}
+
+export interface NotificationItem {
+  id: number;
+  title: string;
+  message: string;
+  category: 'info' | 'warning' | 'success' | 'risk' | string;
+  is_read: boolean;
+  timestamp: string;
+}
+
+export interface DatasetItem {
+  id: number;
+  filename: string;
+  original_name: string;
+  row_count: number;
+  column_count: number;
+  quality_score: number;
+  has_dates: boolean;
+  training_period_str: string;
+  is_active: boolean;
+  uploaded_at: string;
 }
 
 export interface DashboardData {
@@ -90,7 +142,12 @@ export interface DashboardData {
     avg_productivity: KPICardData;
     high_performers: KPICardData;
     at_risk: KPICardData;
+    predicted_improvement?: KPICardData;
+    predicted_decline?: KPICardData;
   };
+  workforce_health?: WorkforceHealthData;
+  executive_summary?: string;
+  risk_matrix?: RiskMatrixPoint[];
   actual_vs_predicted?: ActualVsPredictedSeries[];
   productivity_distribution?: ProductivityDistributionItem[];
   distribution_total?: number;
@@ -100,6 +157,10 @@ export interface DashboardData {
   key_insights?: KeyInsightItem[];
   recommended_actions?: RecommendedActionItem[];
   recent_employees?: DashboardEmployeeItem[];
+  active_dataset_name?: string;
+  active_model_name?: string;
+  model_status?: string;
+  last_refresh?: string;
 }
 
 export interface KeyFactorImpact {

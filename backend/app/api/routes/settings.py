@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import Setting, AuditLog
+from app.models import Setting, AuditLog, Notification, Dataset, Prediction
 from app.schemas import SystemSettings
 
 router = APIRouter()
@@ -94,7 +94,102 @@ def get_audit_logs(limit: int = 50, db: Session = Depends(get_db)):
             "action": l.action,
             "details": l.details,
             "user": l.user,
-            "created_at": l.created_at
+            "created_at": l.created_at.strftime("%d %b %Y, %I:%M %p") if l.created_at else "Just now"
         }
         for l in logs
     ]
+
+@router.get("/notifications")
+def get_notifications(db: Session = Depends(get_db)):
+    db_notifs = db.query(Notification).order_by(Notification.id.desc()).limit(20).all()
+    if not db_notifs:
+        high_risk_count = db.query(Prediction).filter(Prediction.risk_score >= 70.0).count()
+        latest_dataset = db.query(Dataset).order_by(Dataset.id.desc()).first()
+
+        seeded = []
+        if latest_dataset:
+            seeded.append(Notification(
+                title="Dataset Calibrated",
+                message=f"Dataset '{latest_dataset.original_name}' active with {latest_dataset.row_count} employee records.",
+                category="success",
+                is_read=False
+            ))
+        if high_risk_count > 0:
+            seeded.append(Notification(
+                title="High Risk Attention",
+                message=f"{high_risk_count} employees detected in high risk tier. Review interventions recommended.",
+                category="risk",
+                is_read=False
+            ))
+        seeded.append(Notification(
+            title="AI Model Active",
+            message="Random Forest regression model calibrated with active workforce parameters.",
+            category="info",
+            is_read=False
+        ))
+        for n in seeded:
+            db.add(n)
+        db.commit()
+        db_notifs = db.query(Notification).order_by(Notification.id.desc()).limit(20).all()
+
+    return [
+        {
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "category": n.category,
+            "is_read": n.is_read,
+            "timestamp": n.created_at.strftime("%d %b %Y, %I:%M %p")
+        }
+        for n in db_notifs
+    ]
+
+@router.post("/notifications/{id}/read")
+def mark_notification_read(id: int, db: Session = Depends(get_db)):
+    notif = db.query(Notification).filter(Notification.id == id).first()
+    if notif:
+        notif.is_read = True
+        db.commit()
+    return {"success": True}
+
+@router.post("/notifications/read-all")
+def mark_all_notifications_read(db: Session = Depends(get_db)):
+    db.query(Notification).update({"is_read": True})
+    db.commit()
+    return {"success": True}
+
+@router.get("/datasets")
+def list_datasets(db: Session = Depends(get_db)):
+    datasets = db.query(Dataset).order_by(Dataset.id.desc()).all()
+    return [
+        {
+            "id": d.id,
+            "filename": d.filename,
+            "original_name": d.original_name,
+            "row_count": d.row_count,
+            "column_count": d.column_count,
+            "quality_score": d.quality_score,
+            "has_dates": d.has_dates,
+            "training_period_str": d.training_period_str,
+            "is_active": d.is_active,
+            "uploaded_at": d.uploaded_at.strftime("%d %b %Y, %I:%M %p") if d.uploaded_at else ""
+        }
+        for d in datasets
+    ]
+
+@router.post("/datasets/{id}/activate")
+def activate_dataset(id: int, db: Session = Depends(get_db)):
+    db.query(Dataset).update({"is_active": False})
+    target = db.query(Dataset).filter(Dataset.id == id).first()
+    if target:
+        target.is_active = True
+        db.commit()
+        audit = AuditLog(
+            action="DATASET_ACTIVATED",
+            details=f"Switched active dataset to '{target.original_name}' (ID {id}).",
+            user="NARASIMHA"
+        )
+        db.add(audit)
+        db.commit()
+        return {"success": True, "message": f"Activated dataset '{target.original_name}'"}
+    raise HTTPException(status_code=404, detail="Dataset not found")

@@ -188,8 +188,8 @@ class DynamicStore {
         display_value: String(highPerformers), 
         change_pct: Number(((highPerformers / (total || 1)) * 100).toFixed(1)), 
         trend: 'up' as const, 
-        subtitle: `${Number(((highPerformers / (total || 1)) * 100).toFixed(1))}% of cohort`, 
-        sparkline: [] 
+        subtitle: `${Number(((highPerformers / (total || 1)) * 100).toFixed(1))}% of workforce`, 
+        sparkline: [38, 40, 41, 42, 42.3] 
       },
       at_risk: { 
         value: atRisk, 
@@ -197,7 +197,23 @@ class DynamicStore {
         change_pct: Number(((atRisk / (total || 1)) * 100).toFixed(1)), 
         trend: atRisk > 10 ? 'down' as const : 'neutral' as const, 
         subtitle: `${Number(((atRisk / (total || 1)) * 100).toFixed(1))}% high risk tier`, 
-        sparkline: [] 
+        sparkline: [12, 10, 9, 8.5] 
+      },
+      predicted_improvement: {
+        value: activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) > e.productivity_score).length,
+        display_value: String(activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) > e.productivity_score).length),
+        change_pct: Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) > e.productivity_score).length / (total || 1)) * 100).toFixed(1)),
+        trend: 'up' as const,
+        subtitle: `${Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) > e.productivity_score).length / (total || 1)) * 100).toFixed(1))}% of workforce`,
+        sparkline: [95, 102, 108, 112]
+      },
+      predicted_decline: {
+        value: activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score).length,
+        display_value: String(activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score).length),
+        change_pct: Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score).length / (total || 1)) * 100).toFixed(1)),
+        trend: 'down' as const,
+        subtitle: `${Number(((activeEmployees.filter(e => (e.predicted_score || e.predicted_productivity || e.productivity_score) < e.productivity_score).length / (total || 1)) * 100).toFixed(1))}% of workforce`,
+        sparkline: [48, 42, 38, 36]
       }
     };
 
@@ -320,6 +336,57 @@ class DynamicStore {
       last_updated: 'Updated just now'
     };
 
+    // 4. Workforce Health Score
+    const avgEng = Number((activeEmployees.reduce((a, e) => a + (e.engagement || 75), 0) / (total || 1)).toFixed(1));
+    const avgAtt = Number((activeEmployees.reduce((a, e) => a + (e.attendance || 90), 0) / (total || 1)).toFixed(1));
+    const avgWlBal = Number((activeEmployees.reduce((a, e) => a + Math.min(100, Math.max(0, 100 - Math.abs((e.workload || 40) - 40) * 2.5)), 0) / (total || 1)).toFixed(1));
+    const riskPct = Number(((atRisk / (total || 1)) * 100).toFixed(1));
+    const healthNum = Math.round(avgProd * 0.35 + avgEng * 0.25 + avgAtt * 0.20 + avgWlBal * 0.10 + (100 - riskPct) * 0.10);
+    const healthStatus = healthNum >= 85 ? 'Excellent' : healthNum >= 75 ? 'Healthy' : healthNum >= 60 ? 'Watch' : 'Critical';
+
+    baseDashboard.workforce_health = {
+      score: healthNum,
+      status: healthStatus,
+      breakdown: {
+        productivity: avgProd,
+        engagement: avgEng,
+        attendance: avgAtt,
+        workload_balance: avgWlBal,
+        risk_level_pct: riskPct,
+        risk_level_label: riskPct < 15 ? 'Low' : riskPct < 30 ? 'Moderate' : 'High'
+      }
+    };
+
+    // 5. Dynamic Executive Summary
+    const nonDecliningPct = Number((((total - (baseDashboard.kpis?.predicted_decline?.value || 0)) / (total || 1)) * 100).toFixed(1));
+    baseDashboard.executive_summary = `Workforce productivity is stable with ${Math.round(avgProd)}% average output. ${nonDecliningPct}% of employees are predicted to maintain or improve performance. Engineering leads organizational velocity.`;
+
+    // 6. Risk vs Performance Matrix Coordinates
+    baseDashboard.risk_matrix = activeEmployees.map(e => {
+      const predProd = e.predicted_score || e.predicted_productivity || e.productivity_score;
+      const riskScore = e.burnout_risk_score || 0;
+      let rLevel = 'Low';
+      if (riskScore >= 70) rLevel = 'Critical';
+      else if (riskScore >= 50) rLevel = 'High';
+      else if (riskScore >= 30) rLevel = 'Moderate';
+      return {
+        id: e.id,
+        employee_id: e.employee_id,
+        employee_name: e.full_name || e.employee_name,
+        department: e.department,
+        role: e.role || 'Specialist',
+        productivity: Number(e.productivity_score.toFixed(1)),
+        risk_score: Number(riskScore.toFixed(1)),
+        risk_level: rLevel,
+        predicted: Number(predProd.toFixed(1))
+      };
+    });
+
+    baseDashboard.active_dataset_name = 'WorkVista Enterprise Demo (520 Employees)';
+    baseDashboard.active_model_name = `${this.activeModel} (v1.2)`;
+    baseDashboard.model_status = 'AI Model Active';
+    baseDashboard.last_refresh = 'Sep 15, 2026 10:24 AM';
+
     baseDashboard.recent_employees = activeEmployees.slice(0, 10).map(e => {
       const predProd = e.predicted_score || e.predicted_productivity || e.productivity_score;
       const changePct = e.prediction_change_pct ?? Number((predProd - e.productivity_score).toFixed(1));
@@ -327,16 +394,23 @@ class DynamicStore {
       let status: 'High' | 'Medium' | 'At Risk' = 'Medium';
       if (e.productivity_score >= this.settings.high_perf_threshold) status = 'High';
       else if (riskScore >= this.settings.risk_threshold) status = 'At Risk';
+      let rLevel = 'Low';
+      if (riskScore >= 70) rLevel = 'High';
+      else if (riskScore >= 30) rLevel = 'Moderate';
+
       return {
         id: e.id,
         employee_id: e.employee_id,
         employee_name: e.full_name || e.employee_name,
         department: e.department,
+        role: e.role || 'Specialist',
         current_productivity: Number(e.productivity_score.toFixed(1)),
         predicted_productivity: Number(predProd.toFixed(1)),
         change_pct: Number(changePct.toFixed(1)),
         status,
-        risk_score: Number(riskScore.toFixed(1))
+        risk_score: Number(riskScore.toFixed(1)),
+        confidence_score: 91,
+        last_updated: '15 Sep 2026'
       };
     });
     return baseDashboard;
@@ -756,6 +830,135 @@ class DynamicStore {
         }
       }
     }
+  }
+
+  public getNotifications() {
+    return [
+      {
+        id: 1,
+        title: 'Dataset Calibrated',
+        message: 'WorkVista Enterprise Demo active with 520 verified employee profiles.',
+        category: 'success',
+        is_read: false,
+        timestamp: '15 Sep 2026, 10:24 AM'
+      },
+      {
+        id: 2,
+        title: 'High Risk Alert',
+        message: '44 employees flagged in elevated risk tier. One-on-one review sessions recommended.',
+        category: 'risk',
+        is_read: false,
+        timestamp: '15 Sep 2026, 09:15 AM'
+      },
+      {
+        id: 3,
+        title: 'AI Prediction Model Ready',
+        message: `Active model (${this.activeModel}) recalibrated with R² = ${this.r2Score.toFixed(3)}.`,
+        category: 'info',
+        is_read: false,
+        timestamp: '14 Sep 2026, 04:30 PM'
+      }
+    ];
+  }
+
+  public getDatasets() {
+    return [
+      {
+        id: 1,
+        filename: 'workvista_enterprise_demo.csv',
+        original_name: 'WorkVista Enterprise Demo (520 Employees)',
+        row_count: 520,
+        column_count: 15,
+        quality_score: 98.4,
+        has_dates: false,
+        training_period_str: 'Single period snapshot (520 records)',
+        is_active: true,
+        uploaded_at: '15 Sep 2026, 10:20 AM'
+      },
+      {
+        id: 2,
+        filename: 'q2_engineering_workforce.csv',
+        original_name: 'Q2 Engineering Workforce Benchmark',
+        row_count: 140,
+        column_count: 14,
+        quality_score: 96.2,
+        has_dates: false,
+        training_period_str: 'Q2 Cohort snapshot',
+        is_active: false,
+        uploaded_at: '01 Aug 2026, 02:15 PM'
+      }
+    ];
+  }
+
+  public addTask(employeeId: string, task: { title: string; task_type?: string; due_date?: string }) {
+    if (!this.tasks[employeeId]) this.tasks[employeeId] = [];
+    const newTask = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      employee_id: employeeId,
+      title: task.title || 'Review',
+      task_type: task.task_type || 'Review',
+      status: 'Pending',
+      due_date: task.due_date || '30 Sep 2026'
+    };
+    this.tasks[employeeId].push(newTask);
+    return newTask;
+  }
+
+  public addNote(employeeId: string, content: string) {
+    if (!this.notes[employeeId]) this.notes[employeeId] = [];
+    const newNote = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      employee_id: employeeId,
+      author: 'NARASIMHA',
+      content,
+      created_at: new Date().toISOString()
+    };
+    this.notes[employeeId].unshift(newNote);
+    return newNote;
+  }
+
+  public addAuditLog(action: string, details: string) {
+    const log: AuditLogItem = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      action,
+      user: 'NARASIMHA',
+      details,
+      created_at: new Date().toISOString()
+    };
+    this.auditLogs.unshift(log);
+    return log;
+  }
+
+  public bulkAssignReview(employeeIds: string[], taskTitle: string): { success: boolean; count: number } {
+    employeeIds.forEach(empId => {
+      this.addTask(empId, {
+        title: taskTitle || 'Scheduled Performance Review',
+        task_type: 'Review',
+        due_date: '30 Sep 2026'
+      });
+    });
+    this.addAuditLog('BULK_REVIEW_ASSIGNED', `Assigned review '${taskTitle}' to ${employeeIds.length} employees.`);
+    return { success: true, count: employeeIds.length };
+  }
+
+  public bulkAddNote(employeeIds: string[], content: string): { success: boolean; count: number } {
+    employeeIds.forEach(empId => {
+      this.addNote(empId, content);
+    });
+    this.addAuditLog('BULK_NOTE_ADDED', `Added note to ${employeeIds.length} employees.`);
+    return { success: true, count: employeeIds.length };
+  }
+
+  public bulkFlagEmployees(employeeIds: string[], reason: string): { success: boolean; count: number } {
+    employeeIds.forEach(empId => {
+      const emp = this.employees.find(e => e.employee_id === empId);
+      if (emp) {
+        emp.burnout_risk_score = Math.max(emp.burnout_risk_score || 0, 75);
+        emp.risk_level = 'High';
+      }
+    });
+    this.addAuditLog('BULK_EMPLOYEES_FLAGGED', `Flagged ${employeeIds.length} employees: ${reason}.`);
+    return { success: true, count: employeeIds.length };
   }
 }
 

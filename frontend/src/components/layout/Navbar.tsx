@@ -1,11 +1,14 @@
-import React from 'react';
-import { Search, Calendar, Download, UploadCloud, Sparkles, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Calendar, Download, UploadCloud, Sparkles, RefreshCw, ChevronDown } from 'lucide-react';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface NavbarProps {
   onOpenUpload: () => void;
   onLoadDemo: () => void;
   onExport: () => void;
   onRefresh: () => void;
+  onOpenSearch?: () => void;
+  onNavigateToTab?: (tab: string) => void;
   isRefreshing?: boolean;
   isLoadingDemo?: boolean;
   searchQuery: string;
@@ -17,60 +20,91 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLoadDemo,
   onExport,
   onRefresh,
+  onOpenSearch,
+  onNavigateToTab,
   isRefreshing,
   isLoadingDemo,
   searchQuery,
   onSearchChange,
 }) => {
+  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [selectedRange, setSelectedRange] = useState('01 Sep 2026 – 30 Sep 2026');
+
+  const ranges = [
+    '01 Sep 2026 – 30 Sep 2026',
+    '01 Aug 2026 – 31 Aug 2026',
+    'Q3 2026 (Jul – Sep)',
+    'Year-to-Date (2026)'
+  ];
+
   return (
-    <header className="px-8 pt-7 pb-4 bg-white border-b border-slate-200/80">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        {/* Left Title Area */}
-        <div>
-          <div className="text-[11px] font-bold tracking-widest text-blue-600 uppercase mb-1">
-            Workforce Analytics
+    <header className="px-6 py-3.5 bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        {/* Global Search Input with Ctrl+K shortcut */}
+        <div className="flex-1 max-w-md">
+          <div 
+            onClick={onOpenSearch}
+            className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer hover:border-blue-400 hover:bg-slate-50/80 transition-colors group"
+          >
+            <Search className="w-4 h-4 text-slate-400 group-hover:text-blue-500 mr-2 shrink-0 transition-colors" />
+            <input
+              type="text"
+              readOnly
+              placeholder="Search employees, departments, reports..."
+              className="w-full text-xs bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 cursor-pointer"
+            />
+            <div className="flex items-center gap-1 shrink-0 ml-2">
+              <kbd className="px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 bg-white border border-slate-200 rounded shadow-2xs">
+                Ctrl
+              </kbd>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 bg-white border border-slate-200 rounded shadow-2xs">
+                K
+              </kbd>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Workforce Productivity Prediction
-            </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              {typeof window !== 'undefined' && window.location.hostname.includes('github.io')
-                ? 'Interactive Cloud Engine (520 Profiles)'
-                : 'FastAPI ML Engine Connected'}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Leverage AI to predict, monitor and improve employee performance.
-          </p>
         </div>
 
         {/* Right Actions Bar */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Global Search */}
+          {/* Date Range Selector */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search employees, departments..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-56 lg:w-64 transition-all"
-            />
+            <button
+              onClick={() => setDateRangeOpen(!dateRangeOpen)}
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-xl shadow-2xs hover:bg-slate-50 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>{selectedRange}</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {dateRangeOpen && (
+              <div className="absolute right-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-40 py-1 animate-in fade-in zoom-in-95">
+                {ranges.map(r => (
+                  <button
+                    key={r}
+                    onClick={() => {
+                      setSelectedRange(r);
+                      setDateRangeOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 text-xs transition-colors ${
+                      selectedRange === r ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Date Range Selector */}
-          <div className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 cursor-pointer transition-colors">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>01 Sep 2026 – 30 Sep 2026</span>
-          </div>
+          {/* Notifications Center */}
+          <NotificationDropdown onNavigateToTab={onNavigateToTab} />
 
           {/* Refresh Button */}
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            title="Refresh Data"
+            title="Refresh Platform Analytics"
             className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
@@ -80,37 +114,37 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onLoadDemo}
             disabled={isLoadingDemo}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors shadow-sm disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors shadow-2xs disabled:opacity-50"
+            title="Reset to 520 realistic employee profiles"
           >
             <Sparkles className={`w-3.5 h-3.5 ${isLoadingDemo ? 'animate-spin' : 'text-blue-600'}`} />
-            <span>{isLoadingDemo ? 'Processing...' : 'Load Demo Data'}</span>
+            <span className="hidden sm:inline">{isLoadingDemo ? 'Processing...' : 'Demo Data'}</span>
           </button>
 
           {/* Upload Dataset Button */}
           <button
             onClick={onOpenUpload}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors shadow-2xs"
           >
             <UploadCloud className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Upload Dataset</span>
+            <span className="hidden sm:inline">Upload</span>
           </button>
 
-          {/* Export Report Button */}
-          <button
-            onClick={onExport}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-[#0F172A] hover:bg-slate-800 rounded-xl transition-all shadow-sm shadow-slate-900/10 active:scale-95"
+          {/* User Profile Pill */}
+          <div 
+            onClick={() => onNavigateToTab && onNavigateToTab('settings')}
+            className="flex items-center gap-2 pl-2 pr-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl cursor-pointer transition-colors"
+            title="NARASIMHA (HR Analytics)"
           >
-            <Download className="w-3.5 h-3.5 text-slate-200" />
-            <span>Export Report</span>
-          </button>
+            <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+              NA
+            </div>
+            <div className="text-left hidden md:block">
+              <div className="text-xs font-bold text-slate-800 leading-tight">NARASIMHA</div>
+              <div className="text-[10px] text-slate-500 leading-tight">HR Analytics</div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Inspirational Quote Banner */}
-      <div className="flex justify-end mt-2">
-        <p className="text-[11px] italic text-slate-400 font-light">
-          "Data empowers people. Predictions create possibilities."
-        </p>
       </div>
     </header>
   );

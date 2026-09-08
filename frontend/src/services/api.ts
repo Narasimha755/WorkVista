@@ -7,7 +7,9 @@ import {
   ReportItem, 
   SystemSettings, 
   AuditLogItem, 
-  DataQualityReport 
+  DataQualityReport,
+  NotificationItem,
+  DatasetItem 
 } from '../types';
 import mockData from './mockData.json';
 import { dynamicStore, downloadFile } from './dynamicStore';
@@ -237,8 +239,12 @@ export const api = {
       }
     ),
 
-  getAuditLogs: () => 
-    fetchJson<AuditLogItem[]>(API_BASE + '/audit', undefined, () => dynamicStore.auditLogs),
+  getAuditLogs: (limit?: number) => 
+    fetchJson<AuditLogItem[]>(
+      API_BASE + '/audit' + (limit ? `?limit=${limit}` : ''), 
+      undefined, 
+      () => limit ? dynamicStore.auditLogs.slice(0, limit) : dynamicStore.auditLogs
+    ),
 
   getEmployeeNotes: (id: string) => 
     fetchJson<any[]>(
@@ -327,6 +333,10 @@ export const api = {
     }
   },
 
+  exportEmployeesCsv: (filters?: { department?: string; status?: string; search?: string }) => {
+    return api.triggerExportCsv(filters);
+  },
+
   triggerExportEmployeeDossier: (employeeId: string, format: 'pdf' | 'csv' | 'json') => {
     if (isStaticPreview) {
       dynamicStore.exportEmployeeDossier(employeeId, format);
@@ -363,5 +373,52 @@ export const api = {
     if (filters?.status && filters.status !== 'All') query.append('status', filters.status);
     if (filters?.search) query.append('search', filters.search);
     return API_BASE + '/export/' + format + '?' + query.toString();
+  },
+
+  getNotifications: () =>
+    fetchJson<NotificationItem[]>(
+      API_BASE + '/notifications',
+      undefined,
+      () => dynamicStore.getNotifications()
+    ),
+
+  markNotificationRead: (id: number) =>
+    fetchJson<{ success: boolean }>(
+      API_BASE + '/notifications/' + id + '/read',
+      { method: 'POST' },
+      () => ({ success: true })
+    ),
+
+  markAllNotificationsRead: () =>
+    fetchJson<{ success: boolean }>(
+      API_BASE + '/notifications/read-all',
+      { method: 'POST' },
+      () => ({ success: true })
+    ),
+
+  getDatasets: () =>
+    fetchJson<DatasetItem[]>(
+      API_BASE + '/datasets',
+      undefined,
+      () => dynamicStore.getDatasets()
+    ),
+
+  activateDataset: (id: number) =>
+    fetchJson<{ success: boolean; message: string }>(
+      API_BASE + '/datasets/' + id + '/activate',
+      { method: 'POST' },
+      () => ({ success: true, message: 'Dataset switched.' })
+    ),
+
+  bulkAssignReview: (employeeIds: string[], taskTitle: string) => {
+    return dynamicStore.bulkAssignReview(employeeIds, taskTitle);
+  },
+
+  bulkAddNote: (employeeIds: string[], content: string) => {
+    return dynamicStore.bulkAddNote(employeeIds, content);
+  },
+
+  bulkFlagEmployees: (employeeIds: string[], reason: string) => {
+    return dynamicStore.bulkFlagEmployees(employeeIds, reason);
   }
 };
