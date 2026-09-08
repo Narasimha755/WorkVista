@@ -1,0 +1,1686 @@
+{
+  "dashboard": {
+    "has_data": true,
+    "has_temporal_data": false,
+    "temporal_message": "Historical longitudinal observations are not available in the uploaded dataset. Displaying cross-sectional workforce metrics.",
+    "kpis": {
+      "total_employees": {
+        "value": 12.0,
+        "display_value": "12",
+        "change_pct": 0.0,
+        "trend": "neutral",
+        "subtitle": "Active workforce records",
+        "sparkline": []
+      },
+      "avg_productivity": {
+        "value": 76.8,
+        "display_value": "77%",
+        "change_pct": 0.9,
+        "trend": "up",
+        "subtitle": "+0.7 pts vs baseline",
+        "sparkline": []
+      },
+      "high_performers": {
+        "value": 6.0,
+        "display_value": "6",
+        "change_pct": 20.0,
+        "trend": "up",
+        "subtitle": "+1 vs baseline cycle",
+        "sparkline": []
+      },
+      "at_risk": {
+        "value": 0.0,
+        "display_value": "0",
+        "change_pct": 0.0,
+        "trend": "up",
+        "subtitle": "0.0% high risk tier",
+        "sparkline": []
+      }
+    },
+    "actual_vs_predicted": [
+      {
+        "label": "Engineering",
+        "actual": 91.5,
+        "predicted": 86.9
+      },
+      {
+        "label": "Finance",
+        "actual": 81.5,
+        "predicted": 81.9
+      },
+      {
+        "label": "HR",
+        "actual": 85.5,
+        "predicted": 84.9
+      },
+      {
+        "label": "Marketing",
+        "actual": 77.0,
+        "predicted": 76.4
+      },
+      {
+        "label": "Operations",
+        "actual": 66.0,
+        "predicted": 67.7
+      },
+      {
+        "label": "Sales",
+        "actual": 59.0,
+        "predicted": 66.9
+      }
+    ],
+    "productivity_distribution": [
+      {
+        "name": "High (>= 80%)",
+        "count": 6,
+        "percentage": 50.0,
+        "color": "#10B981"
+      },
+      {
+        "name": "Medium (50-79%)",
+        "count": 6,
+        "percentage": 50.0,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "Low (< 50%)",
+        "count": 0,
+        "percentage": 0.0,
+        "color": "#EF4444"
+      }
+    ],
+    "distribution_total": 12,
+    "prediction_engine": {
+      "status": "Active",
+      "model_name": "RandomForest",
+      "model_type": "RandomForest",
+      "task_type": "regression",
+      "r2_score": 0.7507,
+      "mae": 5.47,
+      "rmse": 7.02,
+      "model_accuracy": null,
+      "dataset_size": 12,
+      "features_count": 26,
+      "training_period": "Single period snapshot (12 records)",
+      "last_updated": "08 Sep 2026, 08:16 AM"
+    },
+    "department_productivity": [
+      {
+        "department": "Engineering",
+        "actual": 91.5,
+        "predicted": 86.9
+      },
+      {
+        "department": "Finance",
+        "actual": 81.5,
+        "predicted": 81.9
+      },
+      {
+        "department": "HR",
+        "actual": 85.5,
+        "predicted": 84.9
+      },
+      {
+        "department": "Marketing",
+        "actual": 77.0,
+        "predicted": 76.4
+      },
+      {
+        "department": "Operations",
+        "actual": 66.0,
+        "predicted": 67.7
+      },
+      {
+        "department": "Sales",
+        "actual": 59.0,
+        "predicted": 66.9
+      }
+    ],
+    "key_factors": [
+      {
+        "name": "Project Complexity / Deadlines",
+        "raw_key": "deadline_adherence",
+        "importance_pct": 17.1,
+        "color": "#EC4899"
+      },
+      {
+        "name": "Workload Balance",
+        "raw_key": "workload",
+        "importance_pct": 13.7,
+        "color": "#10B981"
+      },
+      {
+        "name": "Engagement Score",
+        "raw_key": "engagement",
+        "importance_pct": 13.0,
+        "color": "#F59E0B"
+      },
+      {
+        "name": "Historical Output",
+        "raw_key": "previous_productivity",
+        "importance_pct": 12.3,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "Working Hours",
+        "raw_key": "working_hours",
+        "importance_pct": 9.8,
+        "color": "#6366F1"
+      }
+    ],
+    "key_insights": [
+      {
+        "id": "insight-overall-trend",
+        "type": "trend",
+        "icon": "TrendingUp",
+        "message": "Overall productivity is expected to increase by 0.9% next month across active cohorts.",
+        "badge": "Positive Growth"
+      },
+      {
+        "id": "insight-at-risk",
+        "type": "risk",
+        "icon": "AlertTriangle",
+        "message": "3 employees are projected to experience a measurable productivity dip next cycle.",
+        "badge": "Watchlist"
+      },
+      {
+        "id": "insight-top-dept",
+        "type": "team",
+        "icon": "Users",
+        "message": "Engineering leads with 86.9% average predicted productivity, while Sales exhibits +13.5% growth potential.",
+        "badge": "Department Analysis"
+      },
+      {
+        "id": "insight-correlation",
+        "type": "correlation",
+        "icon": "Target",
+        "message": "Balanced task distribution correlates positively (r=-0.82) with sustained deadline adherence.",
+        "badge": "Optimization"
+      }
+    ],
+    "recommended_actions": [
+      {
+        "id": "rec-workload",
+        "title": "Redistribute workload in Sales",
+        "category": "Workload Balance",
+        "affected_count": 2,
+        "potential_impact": "+12% productivity boost",
+        "action_label": "Rebalance Tasks",
+        "urgency": "medium"
+      },
+      {
+        "id": "rec-training",
+        "title": "Provide upskilling for Sales team",
+        "category": "Learning & Dev",
+        "affected_count": 12,
+        "potential_impact": "Accelerate task velocity by 15%",
+        "action_label": "Assign Modules",
+        "urgency": "medium"
+      },
+      {
+        "id": "rec-recognition",
+        "title": "Recognize and reward top performers",
+        "category": "Retention",
+        "affected_count": 6,
+        "potential_impact": "Improve retention & team morale",
+        "action_label": "View Candidates",
+        "urgency": "low"
+      }
+    ],
+    "recent_employees": [
+      {
+        "id": 1,
+        "employee_id": "E-101",
+        "employee_name": "Sophia Davis",
+        "department": "Engineering",
+        "current_productivity": 91.0,
+        "predicted_productivity": 86.1,
+        "change_pct": -5.4,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 17.4
+      },
+      {
+        "id": 2,
+        "employee_id": "E-102",
+        "employee_name": "Lucas Martinez",
+        "department": "Marketing",
+        "current_productivity": 76.0,
+        "predicted_productivity": 74.4,
+        "change_pct": -2.1,
+        "status": "Medium",
+        "risk_level": "Low",
+        "risk_score": 26.9
+      },
+      {
+        "id": 3,
+        "employee_id": "E-103",
+        "employee_name": "Elena Rostova",
+        "department": "Finance",
+        "current_productivity": 80.0,
+        "predicted_productivity": 80.4,
+        "change_pct": 0.5,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.8
+      },
+      {
+        "id": 4,
+        "employee_id": "E-104",
+        "employee_name": "Chen Wei",
+        "department": "Operations",
+        "current_productivity": 67.0,
+        "predicted_productivity": 68.4,
+        "change_pct": 2.1,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 43.0
+      },
+      {
+        "id": 5,
+        "employee_id": "E-105",
+        "employee_name": "Marcus Thorne",
+        "department": "HR",
+        "current_productivity": 86.0,
+        "predicted_productivity": 85.1,
+        "change_pct": -1.0,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.0
+      }
+    ]
+  },
+  "analytics": {
+    "has_data": true,
+    "has_temporal_data": false,
+    "temporal_message": "Historical longitudinal observations are not available in the uploaded dataset. Displaying cross-sectional workforce metrics.",
+    "productivity_trends": [],
+    "department_comparisons": [
+      {
+        "department": "Engineering",
+        "employee_count": 2,
+        "avg_productivity": 91.5,
+        "predicted_productivity": 86.9,
+        "high_performers": 2,
+        "at_risk": 0,
+        "avg_workload": 73.0,
+        "avg_attendance": 95.5,
+        "avg_engagement": 85.5
+      },
+      {
+        "department": "Finance",
+        "employee_count": 2,
+        "avg_productivity": 81.5,
+        "predicted_productivity": 81.9,
+        "high_performers": 2,
+        "at_risk": 0,
+        "avg_workload": 72.0,
+        "avg_attendance": 92.5,
+        "avg_engagement": 80.0
+      },
+      {
+        "department": "HR",
+        "employee_count": 2,
+        "avg_productivity": 85.5,
+        "predicted_productivity": 84.9,
+        "high_performers": 2,
+        "at_risk": 0,
+        "avg_workload": 65.5,
+        "avg_attendance": 97.0,
+        "avg_engagement": 86.0
+      },
+      {
+        "department": "Marketing",
+        "employee_count": 2,
+        "avg_productivity": 77.0,
+        "predicted_productivity": 76.4,
+        "high_performers": 0,
+        "at_risk": 0,
+        "avg_workload": 77.0,
+        "avg_attendance": 90.0,
+        "avg_engagement": 76.0
+      },
+      {
+        "department": "Operations",
+        "employee_count": 2,
+        "avg_productivity": 66.0,
+        "predicted_productivity": 67.7,
+        "high_performers": 0,
+        "at_risk": 0,
+        "avg_workload": 88.5,
+        "avg_attendance": 90.0,
+        "avg_engagement": 63.0
+      },
+      {
+        "department": "Sales",
+        "employee_count": 2,
+        "avg_productivity": 59.0,
+        "predicted_productivity": 66.9,
+        "high_performers": 0,
+        "at_risk": 0,
+        "avg_workload": 89.0,
+        "avg_attendance": 80.0,
+        "avg_engagement": 57.5
+      }
+    ],
+    "workload_vs_productivity": [
+      {
+        "id": "E-101",
+        "name": "Sophia Davis",
+        "department": "Engineering",
+        "predicted": 86.1,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 17.4,
+        "x": 72.0,
+        "y": 91.0
+      },
+      {
+        "id": "E-102",
+        "name": "Lucas Martinez",
+        "department": "Marketing",
+        "predicted": 74.4,
+        "status": "Medium",
+        "risk_level": "Low",
+        "risk_score": 26.9,
+        "x": 84.0,
+        "y": 76.0
+      },
+      {
+        "id": "E-103",
+        "name": "Elena Rostova",
+        "department": "Finance",
+        "predicted": 80.4,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.8,
+        "x": 68.0,
+        "y": 80.0
+      },
+      {
+        "id": "E-104",
+        "name": "Chen Wei",
+        "department": "Operations",
+        "predicted": 68.4,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 43.0,
+        "x": 89.0,
+        "y": 67.0
+      },
+      {
+        "id": "E-105",
+        "name": "Marcus Thorne",
+        "department": "HR",
+        "predicted": 85.1,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.0,
+        "x": 65.0,
+        "y": 86.0
+      },
+      {
+        "id": "E-106",
+        "name": "Aisha Khan",
+        "department": "Sales",
+        "predicted": 64.7,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 64.6,
+        "x": 92.0,
+        "y": 60.0
+      },
+      {
+        "id": "E-107",
+        "name": "David Kim",
+        "department": "Engineering",
+        "predicted": 87.8,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 15.1,
+        "x": 74.0,
+        "y": 92.0
+      },
+      {
+        "id": "E-108",
+        "name": "Maya Lin",
+        "department": "Marketing",
+        "predicted": 78.4,
+        "status": "Medium",
+        "risk_level": "Low",
+        "risk_score": 11.9,
+        "x": 70.0,
+        "y": 78.0
+      },
+      {
+        "id": "E-109",
+        "name": "Carlos Mendez",
+        "department": "Operations",
+        "predicted": 67.0,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 43.5,
+        "x": 88.0,
+        "y": 65.0
+      },
+      {
+        "id": "E-110",
+        "name": "Fatima Zahra",
+        "department": "Finance",
+        "predicted": 83.4,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 9.1,
+        "x": 76.0,
+        "y": 83.0
+      },
+      {
+        "id": "E-111",
+        "name": "Alexander Silva",
+        "department": "Sales",
+        "predicted": 69.1,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 56.0,
+        "x": 86.0,
+        "y": 58.0
+      },
+      {
+        "id": "E-112",
+        "name": "Amara Kowalski",
+        "department": "HR",
+        "predicted": 84.8,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 8.8,
+        "x": 66.0,
+        "y": 85.0
+      }
+    ],
+    "attendance_vs_productivity": [
+      {
+        "id": "E-101",
+        "name": "Sophia Davis",
+        "department": "Engineering",
+        "predicted": 86.1,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 17.4,
+        "x": 96.0,
+        "y": 91.0
+      },
+      {
+        "id": "E-102",
+        "name": "Lucas Martinez",
+        "department": "Marketing",
+        "predicted": 74.4,
+        "status": "Medium",
+        "risk_level": "Low",
+        "risk_score": 26.9,
+        "x": 88.0,
+        "y": 76.0
+      },
+      {
+        "id": "E-103",
+        "name": "Elena Rostova",
+        "department": "Finance",
+        "predicted": 80.4,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.8,
+        "x": 91.0,
+        "y": 80.0
+      },
+      {
+        "id": "E-104",
+        "name": "Chen Wei",
+        "department": "Operations",
+        "predicted": 68.4,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 43.0,
+        "x": 94.0,
+        "y": 67.0
+      },
+      {
+        "id": "E-105",
+        "name": "Marcus Thorne",
+        "department": "HR",
+        "predicted": 85.1,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.0,
+        "x": 98.0,
+        "y": 86.0
+      },
+      {
+        "id": "E-106",
+        "name": "Aisha Khan",
+        "department": "Sales",
+        "predicted": 64.7,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 64.6,
+        "x": 82.0,
+        "y": 60.0
+      },
+      {
+        "id": "E-107",
+        "name": "David Kim",
+        "department": "Engineering",
+        "predicted": 87.8,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 15.1,
+        "x": 95.0,
+        "y": 92.0
+      },
+      {
+        "id": "E-108",
+        "name": "Maya Lin",
+        "department": "Marketing",
+        "predicted": 78.4,
+        "status": "Medium",
+        "risk_level": "Low",
+        "risk_score": 11.9,
+        "x": 92.0,
+        "y": 78.0
+      },
+      {
+        "id": "E-109",
+        "name": "Carlos Mendez",
+        "department": "Operations",
+        "predicted": 67.0,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 43.5,
+        "x": 86.0,
+        "y": 65.0
+      },
+      {
+        "id": "E-110",
+        "name": "Fatima Zahra",
+        "department": "Finance",
+        "predicted": 83.4,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 9.1,
+        "x": 94.0,
+        "y": 83.0
+      },
+      {
+        "id": "E-111",
+        "name": "Alexander Silva",
+        "department": "Sales",
+        "predicted": 69.1,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 56.0,
+        "x": 78.0,
+        "y": 58.0
+      },
+      {
+        "id": "E-112",
+        "name": "Amara Kowalski",
+        "department": "HR",
+        "predicted": 84.8,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 8.8,
+        "x": 96.0,
+        "y": 85.0
+      }
+    ],
+    "experience_vs_productivity": [
+      {
+        "id": "E-101",
+        "name": "Sophia Davis",
+        "department": "Engineering",
+        "predicted": 86.1,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 17.4,
+        "x": 6.5,
+        "y": 91.0
+      },
+      {
+        "id": "E-102",
+        "name": "Lucas Martinez",
+        "department": "Marketing",
+        "predicted": 74.4,
+        "status": "Medium",
+        "risk_level": "Low",
+        "risk_score": 26.9,
+        "x": 3.0,
+        "y": 76.0
+      },
+      {
+        "id": "E-103",
+        "name": "Elena Rostova",
+        "department": "Finance",
+        "predicted": 80.4,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.8,
+        "x": 5.0,
+        "y": 80.0
+      },
+      {
+        "id": "E-104",
+        "name": "Chen Wei",
+        "department": "Operations",
+        "predicted": 68.4,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 43.0,
+        "x": 8.0,
+        "y": 67.0
+      },
+      {
+        "id": "E-105",
+        "name": "Marcus Thorne",
+        "department": "HR",
+        "predicted": 85.1,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 10.0,
+        "x": 4.0,
+        "y": 86.0
+      },
+      {
+        "id": "E-106",
+        "name": "Aisha Khan",
+        "department": "Sales",
+        "predicted": 64.7,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 64.6,
+        "x": 4.5,
+        "y": 60.0
+      },
+      {
+        "id": "E-107",
+        "name": "David Kim",
+        "department": "Engineering",
+        "predicted": 87.8,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 15.1,
+        "x": 7.0,
+        "y": 92.0
+      },
+      {
+        "id": "E-108",
+        "name": "Maya Lin",
+        "department": "Marketing",
+        "predicted": 78.4,
+        "status": "Medium",
+        "risk_level": "Low",
+        "risk_score": 11.9,
+        "x": 2.5,
+        "y": 78.0
+      },
+      {
+        "id": "E-109",
+        "name": "Carlos Mendez",
+        "department": "Operations",
+        "predicted": 67.0,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 43.5,
+        "x": 3.5,
+        "y": 65.0
+      },
+      {
+        "id": "E-110",
+        "name": "Fatima Zahra",
+        "department": "Finance",
+        "predicted": 83.4,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 9.1,
+        "x": 4.0,
+        "y": 83.0
+      },
+      {
+        "id": "E-111",
+        "name": "Alexander Silva",
+        "department": "Sales",
+        "predicted": 69.1,
+        "status": "Medium",
+        "risk_level": "Moderate",
+        "risk_score": 56.0,
+        "x": 1.5,
+        "y": 58.0
+      },
+      {
+        "id": "E-112",
+        "name": "Amara Kowalski",
+        "department": "HR",
+        "predicted": 84.8,
+        "status": "High",
+        "risk_level": "Low",
+        "risk_score": 8.8,
+        "x": 5.5,
+        "y": 85.0
+      }
+    ],
+    "risk_distribution": [
+      {
+        "name": "Low Risk (< 30)",
+        "count": 8,
+        "color": "#10B981"
+      },
+      {
+        "name": "Moderate Risk (30-69)",
+        "count": 4,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "High Risk (>= 70)",
+        "count": 0,
+        "color": "#EF4444"
+      }
+    ],
+    "heatmap": [
+      {
+        "department": "Engineering",
+        "cohort": "Entry (0-2 yrs)",
+        "month": "Entry (0-2 yrs)",
+        "value": 91.5
+      },
+      {
+        "department": "Engineering",
+        "cohort": "Associate (3-5 yrs)",
+        "month": "Associate (3-5 yrs)",
+        "value": 91.5
+      },
+      {
+        "department": "Engineering",
+        "cohort": "Senior (6-9 yrs)",
+        "month": "Senior (6-9 yrs)",
+        "value": 91.5
+      },
+      {
+        "department": "Engineering",
+        "cohort": "Lead (10+ yrs)",
+        "month": "Lead (10+ yrs)",
+        "value": 91.5
+      },
+      {
+        "department": "Finance",
+        "cohort": "Entry (0-2 yrs)",
+        "month": "Entry (0-2 yrs)",
+        "value": 81.5
+      },
+      {
+        "department": "Finance",
+        "cohort": "Associate (3-5 yrs)",
+        "month": "Associate (3-5 yrs)",
+        "value": 81.5
+      },
+      {
+        "department": "Finance",
+        "cohort": "Senior (6-9 yrs)",
+        "month": "Senior (6-9 yrs)",
+        "value": 81.5
+      },
+      {
+        "department": "Finance",
+        "cohort": "Lead (10+ yrs)",
+        "month": "Lead (10+ yrs)",
+        "value": 81.5
+      },
+      {
+        "department": "HR",
+        "cohort": "Entry (0-2 yrs)",
+        "month": "Entry (0-2 yrs)",
+        "value": 85.5
+      },
+      {
+        "department": "HR",
+        "cohort": "Associate (3-5 yrs)",
+        "month": "Associate (3-5 yrs)",
+        "value": 85.5
+      },
+      {
+        "department": "HR",
+        "cohort": "Senior (6-9 yrs)",
+        "month": "Senior (6-9 yrs)",
+        "value": 85.5
+      },
+      {
+        "department": "HR",
+        "cohort": "Lead (10+ yrs)",
+        "month": "Lead (10+ yrs)",
+        "value": 85.5
+      },
+      {
+        "department": "Marketing",
+        "cohort": "Entry (0-2 yrs)",
+        "month": "Entry (0-2 yrs)",
+        "value": 78.0
+      },
+      {
+        "department": "Marketing",
+        "cohort": "Associate (3-5 yrs)",
+        "month": "Associate (3-5 yrs)",
+        "value": 76.0
+      },
+      {
+        "department": "Marketing",
+        "cohort": "Senior (6-9 yrs)",
+        "month": "Senior (6-9 yrs)",
+        "value": 77.0
+      },
+      {
+        "department": "Marketing",
+        "cohort": "Lead (10+ yrs)",
+        "month": "Lead (10+ yrs)",
+        "value": 77.0
+      },
+      {
+        "department": "Operations",
+        "cohort": "Entry (0-2 yrs)",
+        "month": "Entry (0-2 yrs)",
+        "value": 66.0
+      },
+      {
+        "department": "Operations",
+        "cohort": "Associate (3-5 yrs)",
+        "month": "Associate (3-5 yrs)",
+        "value": 65.0
+      },
+      {
+        "department": "Operations",
+        "cohort": "Senior (6-9 yrs)",
+        "month": "Senior (6-9 yrs)",
+        "value": 67.0
+      },
+      {
+        "department": "Operations",
+        "cohort": "Lead (10+ yrs)",
+        "month": "Lead (10+ yrs)",
+        "value": 66.0
+      },
+      {
+        "department": "Sales",
+        "cohort": "Entry (0-2 yrs)",
+        "month": "Entry (0-2 yrs)",
+        "value": 58.0
+      },
+      {
+        "department": "Sales",
+        "cohort": "Associate (3-5 yrs)",
+        "month": "Associate (3-5 yrs)",
+        "value": 60.0
+      },
+      {
+        "department": "Sales",
+        "cohort": "Senior (6-9 yrs)",
+        "month": "Senior (6-9 yrs)",
+        "value": 59.0
+      },
+      {
+        "department": "Sales",
+        "cohort": "Lead (10+ yrs)",
+        "month": "Lead (10+ yrs)",
+        "value": 59.0
+      }
+    ]
+  },
+  "departments": [
+    {
+      "id": 1,
+      "name": "Engineering",
+      "employee_count": 2,
+      "avg_productivity": 91.5,
+      "predicted_productivity": 86.9,
+      "high_performers_count": 2,
+      "at_risk_count": 0,
+      "avg_workload": 73.0,
+      "avg_attendance": 95.5,
+      "avg_engagement": 85.5,
+      "productivity_gap": -4.6
+    },
+    {
+      "id": 2,
+      "name": "Finance",
+      "employee_count": 2,
+      "avg_productivity": 81.5,
+      "predicted_productivity": 81.9,
+      "high_performers_count": 2,
+      "at_risk_count": 0,
+      "avg_workload": 72.0,
+      "avg_attendance": 92.5,
+      "avg_engagement": 80.0,
+      "productivity_gap": 0.4
+    },
+    {
+      "id": 3,
+      "name": "HR",
+      "employee_count": 2,
+      "avg_productivity": 85.5,
+      "predicted_productivity": 84.9,
+      "high_performers_count": 2,
+      "at_risk_count": 0,
+      "avg_workload": 65.5,
+      "avg_attendance": 97.0,
+      "avg_engagement": 86.0,
+      "productivity_gap": -0.6
+    },
+    {
+      "id": 4,
+      "name": "Marketing",
+      "employee_count": 2,
+      "avg_productivity": 77.0,
+      "predicted_productivity": 76.4,
+      "high_performers_count": 0,
+      "at_risk_count": 0,
+      "avg_workload": 77.0,
+      "avg_attendance": 90.0,
+      "avg_engagement": 76.0,
+      "productivity_gap": -0.6
+    },
+    {
+      "id": 5,
+      "name": "Operations",
+      "employee_count": 2,
+      "avg_productivity": 66.0,
+      "predicted_productivity": 67.7,
+      "high_performers_count": 0,
+      "at_risk_count": 0,
+      "avg_workload": 88.5,
+      "avg_attendance": 90.0,
+      "avg_engagement": 63.0,
+      "productivity_gap": 1.7
+    },
+    {
+      "id": 6,
+      "name": "Sales",
+      "employee_count": 2,
+      "avg_productivity": 59.0,
+      "predicted_productivity": 66.9,
+      "high_performers_count": 0,
+      "at_risk_count": 0,
+      "avg_workload": 89.0,
+      "avg_attendance": 80.0,
+      "avg_engagement": 57.5,
+      "productivity_gap": 7.9
+    }
+  ],
+  "model": {
+    "has_model": true,
+    "model_name": "RandomForest",
+    "model_type": "RandomForest",
+    "task_type": "regression",
+    "target_column": "productivity_score",
+    "dataset_size": 12,
+    "features_count": 26,
+    "training_duration_sec": 0.16,
+    "created_at": "2026-09-08T08:16:29.874072",
+    "r2_score": 0.7507,
+    "mae": 5.47,
+    "rmse": 7.02,
+    "mape": 8.34,
+    "accuracy": null,
+    "precision_score": null,
+    "recall_score": null,
+    "f1_score": null,
+    "feature_importances": [
+      {
+        "name": "Project Complexity / Deadlines",
+        "raw_key": "deadline_adherence",
+        "importance_pct": 17.1,
+        "color": "#EC4899"
+      },
+      {
+        "name": "Workload Balance",
+        "raw_key": "workload",
+        "importance_pct": 13.7,
+        "color": "#10B981"
+      },
+      {
+        "name": "Engagement Score",
+        "raw_key": "engagement",
+        "importance_pct": 13.0,
+        "color": "#F59E0B"
+      },
+      {
+        "name": "Historical Output",
+        "raw_key": "previous_productivity",
+        "importance_pct": 12.3,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "Working Hours",
+        "raw_key": "working_hours",
+        "importance_pct": 9.8,
+        "color": "#6366F1"
+      },
+      {
+        "name": "Attendance Rate",
+        "raw_key": "attendance",
+        "importance_pct": 7.9,
+        "color": "#8B5CF6"
+      },
+      {
+        "name": "Completed Tasks",
+        "raw_key": "tasks_completed",
+        "importance_pct": 7.6,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "Department Alignment",
+        "raw_key": "department",
+        "importance_pct": 6.7,
+        "color": "#8B5CF6"
+      },
+      {
+        "name": "Role",
+        "raw_key": "role",
+        "importance_pct": 3.3,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "Experience & Tenure",
+        "raw_key": "experience",
+        "importance_pct": 3.2,
+        "color": "#06B6D4"
+      },
+      {
+        "name": "Skill Proficiency",
+        "raw_key": "skill_level",
+        "importance_pct": 3.1,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "Active Projects",
+        "raw_key": "projects",
+        "importance_pct": 2.4,
+        "color": "#14B8A6"
+      }
+    ],
+    "actual_vs_predicted_scatter": [],
+    "residuals_distribution": [
+      {
+        "range": "<-8",
+        "count": 0
+      },
+      {
+        "range": "-8 to -4",
+        "count": 0
+      },
+      {
+        "range": "-4 to 0",
+        "count": 0
+      },
+      {
+        "range": "0 to 4",
+        "count": 0
+      },
+      {
+        "range": "4 to 8",
+        "count": 0
+      },
+      {
+        "range": ">8",
+        "count": 0
+      }
+    ]
+  },
+  "employees": {
+    "total": 12,
+    "page": 1,
+    "page_size": 50,
+    "total_pages": 1,
+    "items": [
+      {
+        "id": 1,
+        "employee_id": "E-101",
+        "employee_name": "Sophia Davis",
+        "department": "Engineering",
+        "role": "Senior Software Engineer",
+        "experience": 6.5,
+        "attendance": 96.0,
+        "workload": 72.0,
+        "working_hours": 40.0,
+        "engagement": 85.0,
+        "skill_level": 92.0,
+        "projects": 4,
+        "tasks_completed": 36,
+        "deadline_adherence": 94.0,
+        "previous_productivity": 88.0,
+        "productivity_score": 91.0,
+        "performance_rating": "High",
+        "prediction": {
+          "predicted_productivity": 86.1,
+          "change_pct": -5.4,
+          "status": "High",
+          "risk_level": "Low",
+          "risk_score": 17.4,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921547"
+      },
+      {
+        "id": 2,
+        "employee_id": "E-102",
+        "employee_name": "Lucas Martinez",
+        "department": "Marketing",
+        "role": "Growth Specialist",
+        "experience": 3.0,
+        "attendance": 88.0,
+        "workload": 84.0,
+        "working_hours": 46.0,
+        "engagement": 72.0,
+        "skill_level": 75.0,
+        "projects": 5,
+        "tasks_completed": 28,
+        "deadline_adherence": 82.0,
+        "previous_productivity": 74.0,
+        "productivity_score": 76.0,
+        "performance_rating": "Medium",
+        "prediction": {
+          "predicted_productivity": 74.4,
+          "change_pct": -2.1,
+          "status": "Medium",
+          "risk_level": "Low",
+          "risk_score": 26.9,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921554"
+      },
+      {
+        "id": 3,
+        "employee_id": "E-103",
+        "employee_name": "Elena Rostova",
+        "department": "Finance",
+        "role": "Risk Auditor",
+        "experience": 5.0,
+        "attendance": 91.0,
+        "workload": 68.0,
+        "working_hours": 39.0,
+        "engagement": 78.0,
+        "skill_level": 84.0,
+        "projects": 3,
+        "tasks_completed": 25,
+        "deadline_adherence": 89.0,
+        "previous_productivity": 78.0,
+        "productivity_score": 80.0,
+        "performance_rating": "High",
+        "prediction": {
+          "predicted_productivity": 80.4,
+          "change_pct": 0.5,
+          "status": "High",
+          "risk_level": "Low",
+          "risk_score": 10.8,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921557"
+      },
+      {
+        "id": 4,
+        "employee_id": "E-104",
+        "employee_name": "Chen Wei",
+        "department": "Operations",
+        "role": "Operations Manager",
+        "experience": 8.0,
+        "attendance": 94.0,
+        "workload": 89.0,
+        "working_hours": 48.0,
+        "engagement": 62.0,
+        "skill_level": 80.0,
+        "projects": 6,
+        "tasks_completed": 42,
+        "deadline_adherence": 78.0,
+        "previous_productivity": 70.0,
+        "productivity_score": 67.0,
+        "performance_rating": "Medium",
+        "prediction": {
+          "predicted_productivity": 68.4,
+          "change_pct": 2.1,
+          "status": "Medium",
+          "risk_level": "Moderate",
+          "risk_score": 43.0,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921560"
+      },
+      {
+        "id": 5,
+        "employee_id": "E-105",
+        "employee_name": "Marcus Thorne",
+        "department": "HR",
+        "role": "People Partner",
+        "experience": 4.0,
+        "attendance": 98.0,
+        "workload": 65.0,
+        "working_hours": 38.0,
+        "engagement": 88.0,
+        "skill_level": 78.0,
+        "projects": 2,
+        "tasks_completed": 22,
+        "deadline_adherence": 95.0,
+        "previous_productivity": 82.0,
+        "productivity_score": 86.0,
+        "performance_rating": "High",
+        "prediction": {
+          "predicted_productivity": 85.1,
+          "change_pct": -1.0,
+          "status": "High",
+          "risk_level": "Low",
+          "risk_score": 10.0,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921563"
+      },
+      {
+        "id": 6,
+        "employee_id": "E-106",
+        "employee_name": "Aisha Khan",
+        "department": "Sales",
+        "role": "Account Executive",
+        "experience": 4.5,
+        "attendance": 82.0,
+        "workload": 92.0,
+        "working_hours": 50.0,
+        "engagement": 55.0,
+        "skill_level": 72.0,
+        "projects": 5,
+        "tasks_completed": 38,
+        "deadline_adherence": 70.0,
+        "previous_productivity": 65.0,
+        "productivity_score": 60.0,
+        "performance_rating": "Medium",
+        "prediction": {
+          "predicted_productivity": 64.7,
+          "change_pct": 7.8,
+          "status": "Medium",
+          "risk_level": "Moderate",
+          "risk_score": 64.6,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921565"
+      },
+      {
+        "id": 7,
+        "employee_id": "E-107",
+        "employee_name": "David Kim",
+        "department": "Engineering",
+        "role": "DevOps Lead",
+        "experience": 7.0,
+        "attendance": 95.0,
+        "workload": 74.0,
+        "working_hours": 41.0,
+        "engagement": 86.0,
+        "skill_level": 94.0,
+        "projects": 4,
+        "tasks_completed": 35,
+        "deadline_adherence": 92.0,
+        "previous_productivity": 89.0,
+        "productivity_score": 92.0,
+        "performance_rating": "High",
+        "prediction": {
+          "predicted_productivity": 87.8,
+          "change_pct": -4.6,
+          "status": "High",
+          "risk_level": "Low",
+          "risk_score": 15.1,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921568"
+      },
+      {
+        "id": 8,
+        "employee_id": "E-108",
+        "employee_name": "Maya Lin",
+        "department": "Marketing",
+        "role": "Content Strategist",
+        "experience": 2.5,
+        "attendance": 92.0,
+        "workload": 70.0,
+        "working_hours": 40.0,
+        "engagement": 80.0,
+        "skill_level": 76.0,
+        "projects": 3,
+        "tasks_completed": 26,
+        "deadline_adherence": 88.0,
+        "previous_productivity": 76.0,
+        "productivity_score": 78.0,
+        "performance_rating": "Medium",
+        "prediction": {
+          "predicted_productivity": 78.4,
+          "change_pct": 0.5,
+          "status": "Medium",
+          "risk_level": "Low",
+          "risk_score": 11.9,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921571"
+      },
+      {
+        "id": 9,
+        "employee_id": "E-109",
+        "employee_name": "Carlos Mendez",
+        "department": "Operations",
+        "role": "Supply Chain Analyst",
+        "experience": 3.5,
+        "attendance": 86.0,
+        "workload": 88.0,
+        "working_hours": 45.0,
+        "engagement": 64.0,
+        "skill_level": 70.0,
+        "projects": 4,
+        "tasks_completed": 30,
+        "deadline_adherence": 76.0,
+        "previous_productivity": 68.0,
+        "productivity_score": 65.0,
+        "performance_rating": "Medium",
+        "prediction": {
+          "predicted_productivity": 67.0,
+          "change_pct": 3.1,
+          "status": "Medium",
+          "risk_level": "Moderate",
+          "risk_score": 43.5,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921573"
+      },
+      {
+        "id": 10,
+        "employee_id": "E-110",
+        "employee_name": "Fatima Zahra",
+        "department": "Finance",
+        "role": "Financial Analyst",
+        "experience": 4.0,
+        "attendance": 94.0,
+        "workload": 76.0,
+        "working_hours": 40.0,
+        "engagement": 82.0,
+        "skill_level": 82.0,
+        "projects": 3,
+        "tasks_completed": 27,
+        "deadline_adherence": 91.0,
+        "previous_productivity": 80.0,
+        "productivity_score": 83.0,
+        "performance_rating": "High",
+        "prediction": {
+          "predicted_productivity": 83.4,
+          "change_pct": 0.5,
+          "status": "High",
+          "risk_level": "Low",
+          "risk_score": 9.1,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921576"
+      },
+      {
+        "id": 11,
+        "employee_id": "E-111",
+        "employee_name": "Alexander Silva",
+        "department": "Sales",
+        "role": "SDR Lead",
+        "experience": 1.5,
+        "attendance": 78.0,
+        "workload": 86.0,
+        "working_hours": 44.0,
+        "engagement": 60.0,
+        "skill_level": 68.0,
+        "projects": 4,
+        "tasks_completed": 29,
+        "deadline_adherence": 72.0,
+        "previous_productivity": 62.0,
+        "productivity_score": 58.0,
+        "performance_rating": "Medium",
+        "prediction": {
+          "predicted_productivity": 69.1,
+          "change_pct": 19.1,
+          "status": "Medium",
+          "risk_level": "Moderate",
+          "risk_score": 56.0,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921579"
+      },
+      {
+        "id": 12,
+        "employee_id": "E-112",
+        "employee_name": "Amara Kowalski",
+        "department": "HR",
+        "role": "Talent Acquisition",
+        "experience": 5.5,
+        "attendance": 96.0,
+        "workload": 66.0,
+        "working_hours": 39.0,
+        "engagement": 84.0,
+        "skill_level": 80.0,
+        "projects": 3,
+        "tasks_completed": 24,
+        "deadline_adherence": 94.0,
+        "previous_productivity": 81.0,
+        "productivity_score": 85.0,
+        "performance_rating": "High",
+        "prediction": {
+          "predicted_productivity": 84.8,
+          "change_pct": -0.2,
+          "status": "High",
+          "risk_level": "Low",
+          "risk_score": 8.8,
+          "confidence_score": 75.0
+        },
+        "created_at": "2026-09-08T08:16:29.921581"
+      }
+    ]
+  },
+  "reports": [
+    {
+      "id": 8,
+      "title": "Executive PDF Test",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 12 personnel. Compares current output (76.8%) against forecasted output (77.5%).",
+      "kpis": {
+        "Total Workforce": "12",
+        "Current Productivity": "76.8%",
+        "Forecasted Output": "77.5%",
+        "High Performers": "6",
+        "High Risk Count": "0",
+        "Model R\u00b2 Fit": "0.751"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.7% in the next cycle.",
+        "6 employees currently perform in the high tier (>= 80% output).",
+        "0 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T08:16:30.390360"
+    },
+    {
+      "id": 7,
+      "title": "Q3 Executive Briefing",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 520 personnel. Compares current output (78.9%) against forecasted output (78.9%).",
+      "kpis": {
+        "Total Workforce": "520",
+        "Current Productivity": "78.9%",
+        "Forecasted Output": "78.9%",
+        "High Performers": "235",
+        "High Risk Count": "6",
+        "Model R\u00b2 Fit": "0.748"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.0% in the next cycle.",
+        "235 employees currently perform in the high tier (>= 80% output).",
+        "6 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T08:16:29.567413"
+    },
+    {
+      "id": 6,
+      "title": "Q3 Final Audit Report",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 520 personnel. Compares current output (78.9%) against forecasted output (78.9%).",
+      "kpis": {
+        "Total Workforce": "520",
+        "Current Productivity": "78.9%",
+        "Forecasted Output": "78.9%",
+        "High Performers": "235",
+        "High Risk Count": "6",
+        "Model R\u00b2 Fit": "0.748"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.0% in the next cycle.",
+        "235 employees currently perform in the high tier (>= 80% output).",
+        "6 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T07:49:36.112204"
+    },
+    {
+      "id": 5,
+      "title": "Q3 Final Audit Report",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 520 personnel. Compares current output (78.9%) against forecasted output (78.9%).",
+      "kpis": {
+        "Total Workforce": "520",
+        "Current Productivity": "78.9%",
+        "Forecasted Output": "78.9%",
+        "High Performers": "235",
+        "High Risk Count": "6",
+        "Model R\u00b2 Fit": "0.748"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.0% in the next cycle.",
+        "235 employees currently perform in the high tier (>= 80% output).",
+        "6 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T07:46:11.537264"
+    },
+    {
+      "id": 4,
+      "title": "Q3 Final Audit Report",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 520 personnel. Compares current output (78.9%) against forecasted output (78.9%).",
+      "kpis": {
+        "Total Workforce": "520",
+        "Current Productivity": "78.9%",
+        "Forecasted Output": "78.9%",
+        "High Performers": "235",
+        "High Risk Count": "6",
+        "Model R\u00b2 Fit": "0.748"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.0% in the next cycle.",
+        "235 employees currently perform in the high tier (>= 80% output).",
+        "6 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T07:45:29.579318"
+    },
+    {
+      "id": 3,
+      "title": "Executive Intelligence Audit",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 520 personnel. Compares current output (78.9%) against forecasted output (78.9%).",
+      "kpis": {
+        "Total Workforce": "520",
+        "Current Productivity": "78.9%",
+        "Forecasted Output": "78.9%",
+        "High Performers": "235",
+        "High Risk Count": "6",
+        "Model R\u00b2 Fit": "0.748"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.0% in the next cycle.",
+        "235 employees currently perform in the high tier (>= 80% output).",
+        "6 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T07:40:20.430363"
+    },
+    {
+      "id": 2,
+      "title": "Executive PDF Test",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 12 personnel. Compares current output (76.8%) against forecasted output (77.5%).",
+      "kpis": {
+        "Total Workforce": "12",
+        "Current Productivity": "76.8%",
+        "Forecasted Output": "77.5%",
+        "High Performers": "6",
+        "High Risk Count": "0",
+        "Model R\u00b2 Fit": "0.751"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.7% in the next cycle.",
+        "6 employees currently perform in the high tier (>= 80% output).",
+        "0 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T07:38:28.540296"
+    },
+    {
+      "id": 1,
+      "title": "Q3 Executive Briefing",
+      "report_type": "Executive Summary",
+      "summary": "Executive workforce intelligence summary for 520 personnel. Compares current output (78.9%) against forecasted output (78.9%).",
+      "kpis": {
+        "Total Workforce": "520",
+        "Current Productivity": "78.9%",
+        "Forecasted Output": "78.9%",
+        "High Performers": "235",
+        "High Risk Count": "6",
+        "Model R\u00b2 Fit": "0.748"
+      },
+      "key_findings": [
+        "Overall workforce output is projected to shift by +0.0% in the next cycle.",
+        "235 employees currently perform in the high tier (>= 80% output).",
+        "6 employees require targeted management attention to prevent productivity degradation."
+      ],
+      "recommendations": [
+        "Implement workload rebalancing for individuals exhibiting high fatigue and task backlogs.",
+        "Establish formal retention pathways for verified high-performing talent.",
+        "Review bi-weekly predictive pulse dashboards with department leads."
+      ],
+      "format": "PDF",
+      "created_at": "2026-09-08T07:38:27.877311"
+    }
+  ]
+}
