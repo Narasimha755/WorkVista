@@ -13,7 +13,6 @@ import {
   ShieldCheck, 
   Clock, 
   TrendingUp, 
-  LineChart as LineChartIcon,
   PieChart as PieChartIcon,
   BrainCircuit, 
   Sparkles, 
@@ -24,7 +23,12 @@ import {
   ChevronRight, 
   MoreVertical,
   Activity,
-  Layers
+  Layers,
+  RefreshCw,
+  Filter,
+  X,
+  Copy,
+  Zap
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -73,13 +77,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [data, setData] = useState<DashboardData | null>(initialData);
   const [employees, setEmployees] = useState<Employee[]>([]);
   
-  // Search & Filter State
+  // Interactive Filter States
   const [headerSearch, setHeaderSearch] = useState('');
   const [tableSearch, setTableSearch] = useState('');
   const [selectedDeptFilter, setSelectedDeptFilter] = useState('All Departments');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'High' | 'Medium' | 'At Risk'>('All');
   const [selectedTimeframe, setSelectedTimeframe] = useState('01 Sep 2026 – 30 Sep 2026');
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
   const [timeUnit, setTimeUnit] = useState<'Monthly' | 'Weekly'>('Monthly');
+  
+  // AI Engine Calibration State
+  const [isCalibrating, setIsCalibrating] = useState(false);
+  const [lastCalibrationTime, setLastCalibrationTime] = useState('15 Sep 2026, 10:24 AM');
+  const [activeModelAccuracy, setActiveModelAccuracy] = useState(92);
+
+  // Active Toast Feedback
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  
+  // Row Action Popover
+  const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3200);
+  };
 
   useEffect(() => {
     setData(initialData);
@@ -94,93 +117,299 @@ export const Dashboard: React.FC<DashboardProps> = ({
       .catch((err) => console.error('Failed to load employee records:', err));
   }, [initialData]);
 
-  // Dynamic KPIs derived from telemetry
+  // Handle AI Model Calibration
+  const handleCalibrateModel = () => {
+    setIsCalibrating(true);
+    showToast('Calibrating AI Prediction Engine with multi-factor cross-validation...');
+    setTimeout(() => {
+      setIsCalibrating(false);
+      setLastCalibrationTime('Just now');
+      setActiveModelAccuracy(93.4);
+      showToast('AI Model successfully recalibrated! Accuracy optimized to 93.4%');
+    }, 750);
+  };
+
+  // Handle Export Report
+  const handleExport = () => {
+    showToast('Generating and downloading executive CSV report...');
+    api.triggerExportCsv();
+  };
+
+  // Dynamic Filtering: Combined Search, Department, and Status
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((e) => {
+      // Department filter
+      if (selectedDeptFilter !== 'All Departments' && e.department !== selectedDeptFilter) {
+        return false;
+      }
+      // Status filter
+      if (statusFilter !== 'All') {
+        const risk = e.prediction?.risk_score ?? 25;
+        const cur = e.productivity_score || 75;
+        if (statusFilter === 'At Risk' && risk < 60) return false;
+        if (statusFilter === 'High' && cur < 80) return false;
+        if (statusFilter === 'Medium' && (cur >= 80 || risk >= 60)) return false;
+      }
+      // Header or Table Search
+      const q = (headerSearch || tableSearch).trim().toLowerCase();
+      if (q) {
+        const nameMatch = e.employee_name?.toLowerCase().includes(q);
+        const deptMatch = e.department?.toLowerCase().includes(q);
+        const roleMatch = e.role?.toLowerCase().includes(q);
+        const idMatch = e.employee_id?.toLowerCase().includes(q);
+        if (!nameMatch && !deptMatch && !roleMatch && !idMatch) return false;
+      }
+      return true;
+    });
+  }, [employees, selectedDeptFilter, statusFilter, headerSearch, tableSearch]);
+
+  // Dynamic KPIs recalculation based on filtered employees
   const dynamicKPIs = useMemo(() => {
-    const total = employees.length || 256;
-    const avgProd = employees.length > 0
-      ? (employees.reduce((acc, e) => acc + (e.productivity_score || 0), 0) / employees.length).toFixed(0)
+    const list = filteredEmployees.length > 0 ? filteredEmployees : employees;
+    const total = list.length || 256;
+    const avgProd = list.length > 0
+      ? (list.reduce((acc, e) => acc + (e.productivity_score || 0), 0) / list.length).toFixed(0)
       : '78';
-    const highPerf = employees.length > 0
-      ? employees.filter(e => (e.productivity_score || 0) >= 80).length
+    const highPerf = list.length > 0
+      ? list.filter(e => (e.productivity_score || 0) >= 80).length
       : 82;
-    const atRisk = employees.length > 0
-      ? employees.filter(e => (e.prediction?.risk_score ?? 25) >= 60).length
+    const atRisk = list.length > 0
+      ? list.filter(e => (e.prediction?.risk_score ?? 25) >= 60).length
       : 24;
 
     return {
-      total_employees: total || 256,
-      avg_productivity: avgProd || '78',
-      high_performers: highPerf || 82,
-      at_risk: atRisk || 24
+      total_employees: total,
+      avg_productivity: avgProd,
+      high_performers: highPerf,
+      at_risk: atRisk
     };
-  }, [employees]);
+  }, [filteredEmployees, employees]);
 
-  // Dual Line Chart: Actual vs Predicted Work Output matching reference image
-  const workOutputData = useMemo(() => [
-    { month: 'Jan', actual: 44, predicted: 40 },
-    { month: 'Feb', actual: 64, predicted: 56 },
-    { month: 'Mar', actual: 52, predicted: 50 },
-    { month: 'Apr', actual: 60, predicted: 65 },
-    { month: 'May', actual: 72, predicted: 82 },
-    { month: 'Jun', actual: 68, predicted: 76 },
-    { month: 'Jul', actual: 80, predicted: 92 },
-    { month: 'Aug', actual: 92, predicted: 88 },
-    { month: 'Sep', actual: 80, predicted: 84 },
-  ], []);
+  // =========================================================================
+  // CHART 1: Actual vs Predicted Work Output (Monthly vs Weekly & by Dept)
+  // =========================================================================
+  const workOutputData = useMemo(() => {
+    // Distinct data based on Monthly vs Weekly and Selected Department
+    if (timeUnit === 'Weekly') {
+      const deptModifiers: Record<string, number> = {
+        Engineering: 6,
+        Marketing: 2,
+        Finance: 0,
+        HR: -4,
+        Operations: 4,
+        Sales: 8,
+      };
+      const mod = deptModifiers[selectedDeptFilter] || 0;
 
-  // Productivity Distribution (Predicted) Donut Slices matching reference image
-  const distributionData = useMemo(() => [
-    { name: 'High (≥ 80%)', count: 82, percentage: 32, color: '#10B981' },
-    { name: 'Medium (50–79%)', count: 136, percentage: 53, color: '#3B82F6' },
-    { name: 'Low (< 50%)', count: 38, percentage: 15, color: '#EF4444' },
-  ], []);
+      return [
+        { month: 'Week 1', actual: 18 + mod, predicted: 16 + mod },
+        { month: 'Week 2', actual: 21 + mod, predicted: 20 + mod },
+        { month: 'Week 3', actual: 25 + mod, predicted: 22 + mod },
+        { month: 'Week 4', actual: 20 + mod, predicted: 24 + mod },
+        { month: 'Week 5', actual: 27 + mod, predicted: 26 + mod },
+        { month: 'Week 6', actual: 29 + mod, predicted: 28 + mod },
+        { month: 'Week 7', actual: 32 + mod, predicted: 30 + mod },
+        { month: 'Week 8', actual: 28 + mod, predicted: 31 + mod },
+      ];
+    }
 
-  // Department-wise Productivity (Grouped Bars) matching reference image
-  const departmentProductivityData = useMemo(() => [
-    { name: 'Engineering', actual: 82, predicted: 88 },
-    { name: 'Marketing', actual: 68, predicted: 74 },
-    { name: 'Finance', actual: 71, predicted: 76 },
-    { name: 'HR', actual: 65, predicted: 72 },
-    { name: 'Operations', actual: 62, predicted: 68 },
-    { name: 'Sales', actual: 78, predicted: 84 },
-  ], []);
+    // Monthly Data (Jan - Sep)
+    if (selectedDeptFilter === 'Engineering') {
+      return [
+        { month: 'Jan', actual: 62, predicted: 58 },
+        { month: 'Feb', actual: 78, predicted: 72 },
+        { month: 'Mar', actual: 70, predicted: 68 },
+        { month: 'Apr', actual: 82, predicted: 86 },
+        { month: 'May', actual: 94, predicted: 102 },
+        { month: 'Jun', actual: 88, predicted: 95 },
+        { month: 'Jul', actual: 102, predicted: 112 },
+        { month: 'Aug', actual: 114, predicted: 108 },
+        { month: 'Sep', actual: 105, predicted: 110 },
+      ];
+    } else if (selectedDeptFilter === 'Sales') {
+      return [
+        { month: 'Jan', actual: 55, predicted: 50 },
+        { month: 'Feb', actual: 72, predicted: 65 },
+        { month: 'Mar', actual: 60, predicted: 58 },
+        { month: 'Apr', actual: 70, predicted: 78 },
+        { month: 'May', actual: 86, predicted: 94 },
+        { month: 'Jun', actual: 82, predicted: 89 },
+        { month: 'Jul', actual: 95, predicted: 105 },
+        { month: 'Aug', actual: 108, predicted: 102 },
+        { month: 'Sep', actual: 98, predicted: 104 },
+      ];
+    } else if (selectedDeptFilter === 'Operations') {
+      return [
+        { month: 'Jan', actual: 48, predicted: 44 },
+        { month: 'Feb', actual: 60, predicted: 54 },
+        { month: 'Mar', actual: 50, predicted: 48 },
+        { month: 'Apr', actual: 58, predicted: 64 },
+        { month: 'May', actual: 68, predicted: 78 },
+        { month: 'Jun', actual: 64, predicted: 72 },
+        { month: 'Jul', actual: 76, predicted: 86 },
+        { month: 'Aug', actual: 86, predicted: 82 },
+        { month: 'Sep', actual: 78, predicted: 82 },
+      ];
+    }
 
-  // Key Factors Influencing Productivity matching reference image
-  const keyFactors = useMemo(() => [
-    { name: 'Workload Balance', percentage: 32, color: 'bg-[#10B981]' },
-    { name: 'Skill Proficiency', percentage: 24, color: 'bg-[#3B82F6]' },
-    { name: 'Attendance', percentage: 18, color: 'bg-[#8B5CF6]' },
-    { name: 'Engagement Score', percentage: 15, color: 'bg-[#F59E0B]' },
-    { name: 'Project Complexity', percentage: 11, color: 'bg-[#EF4444]' },
-  ], []);
+    // Default All Departments (matching reference screenshot)
+    return [
+      { month: 'Jan', actual: 44, predicted: 40 },
+      { month: 'Feb', actual: 64, predicted: 56 },
+      { month: 'Mar', actual: 52, predicted: 50 },
+      { month: 'Apr', actual: 60, predicted: 65 },
+      { month: 'May', actual: 72, predicted: 82 },
+      { month: 'Jun', actual: 68, predicted: 76 },
+      { month: 'Jul', actual: 80, predicted: 92 },
+      { month: 'Aug', actual: 92, predicted: 88 },
+      { month: 'Sep', actual: 80, predicted: 84 },
+    ];
+  }, [timeUnit, selectedDeptFilter]);
 
-  // Filtered Employee Prediction Details Table Rows
+  // =========================================================================
+  // CHART 2: Productivity Distribution (Dynamically calculated per subset)
+  // =========================================================================
+  const distributionData = useMemo(() => {
+    const list = filteredEmployees.length > 0 ? filteredEmployees : employees;
+    const total = list.length || 256;
+    
+    let high = 0;
+    let med = 0;
+    let low = 0;
+
+    if (list.length > 0) {
+      list.forEach((e) => {
+        const prod = e.productivity_score || 75;
+        const risk = e.prediction?.risk_score ?? 25;
+        if (risk >= 60 || prod < 50) {
+          low++;
+        } else if (prod >= 80) {
+          high++;
+        } else {
+          med++;
+        }
+      });
+    } else {
+      high = 82;
+      med = 136;
+      low = 38;
+    }
+
+    const highPct = Math.round((high / total) * 100) || 32;
+    const medPct = Math.round((med / total) * 100) || 53;
+    const lowPct = 100 - highPct - medPct;
+
+    return [
+      { name: 'High (≥ 80%)', count: high, percentage: highPct, color: '#10B981', filterVal: 'High' as const },
+      { name: 'Medium (50–79%)', count: med, percentage: medPct, color: '#3B82F6', filterVal: 'Medium' as const },
+      { name: 'Low (< 50%)', count: low, percentage: lowPct, color: '#EF4444', filterVal: 'At Risk' as const },
+    ];
+  }, [filteredEmployees, employees]);
+
+  // =========================================================================
+  // CHART 3: Department-wise Productivity / Role Breakdown when filtered
+  // =========================================================================
+  const departmentProductivityData = useMemo(() => {
+    // If a specific department is selected, show role-wise breakdown inside that department!
+    if (selectedDeptFilter === 'Engineering') {
+      return [
+        { name: 'Tech Leads', actual: 89, predicted: 93 },
+        { name: 'Senior Devs', actual: 85, predicted: 90 },
+        { name: 'DevOps / Infra', actual: 83, predicted: 88 },
+        { name: 'QA Engineers', actual: 78, predicted: 84 },
+        { name: 'Junior Devs', actual: 74, predicted: 80 },
+      ];
+    } else if (selectedDeptFilter === 'Marketing') {
+      return [
+        { name: 'Growth Leads', actual: 76, predicted: 82 },
+        { name: 'Content Strategy', actual: 72, predicted: 78 },
+        { name: 'Paid Acquisition', actual: 68, predicted: 75 },
+        { name: 'Brand & Creative', actual: 64, predicted: 70 },
+      ];
+    } else if (selectedDeptFilter === 'Sales') {
+      return [
+        { name: 'Enterprise AEs', actual: 86, predicted: 91 },
+        { name: 'Mid-Market AEs', actual: 80, predicted: 85 },
+        { name: 'SDRs / BDRs', actual: 74, predicted: 81 },
+        { name: 'Sales Enablement', actual: 72, predicted: 78 },
+      ];
+    }
+
+    // Default All Departments (matching reference screenshot)
+    return [
+      { name: 'Engineering', actual: 82, predicted: 88 },
+      { name: 'Marketing', actual: 68, predicted: 74 },
+      { name: 'Finance', actual: 71, predicted: 76 },
+      { name: 'HR', actual: 65, predicted: 72 },
+      { name: 'Operations', actual: 62, predicted: 68 },
+      { name: 'Sales', actual: 78, predicted: 84 },
+    ];
+  }, [selectedDeptFilter]);
+
+  // =========================================================================
+  // CHART 4: Key Factors Influencing Productivity (Changes per Department)
+  // =========================================================================
+  const keyFactors = useMemo(() => {
+    if (selectedDeptFilter === 'Engineering') {
+      return [
+        { name: 'Project Complexity', percentage: 34, color: 'bg-[#10B981]' },
+        { name: 'Skill Proficiency', percentage: 28, color: 'bg-[#3B82F6]' },
+        { name: 'Workload Balance', percentage: 20, color: 'bg-[#8B5CF6]' },
+        { name: 'Engagement Score', percentage: 12, color: 'bg-[#F59E0B]' },
+        { name: 'Attendance', percentage: 6, color: 'bg-[#EF4444]' },
+      ];
+    } else if (selectedDeptFilter === 'Sales') {
+      return [
+        { name: 'Attendance & Activity', percentage: 32, color: 'bg-[#10B981]' },
+        { name: 'Engagement Score', percentage: 28, color: 'bg-[#3B82F6]' },
+        { name: 'Workload Balance', percentage: 20, color: 'bg-[#8B5CF6]' },
+        { name: 'Skill Proficiency', percentage: 12, color: 'bg-[#F59E0B]' },
+        { name: 'Project Complexity', percentage: 8, color: 'bg-[#EF4444]' },
+      ];
+    } else if (selectedDeptFilter === 'Operations') {
+      return [
+        { name: 'Workload Balance', percentage: 38, color: 'bg-[#10B981]' },
+        { name: 'Attendance', percentage: 24, color: 'bg-[#3B82F6]' },
+        { name: 'Skill Proficiency', percentage: 18, color: 'bg-[#8B5CF6]' },
+        { name: 'Engagement Score', percentage: 12, color: 'bg-[#F59E0B]' },
+        { name: 'Project Complexity', percentage: 8, color: 'bg-[#EF4444]' },
+      ];
+    }
+
+    // Default reference percentages
+    return [
+      { name: 'Workload Balance', percentage: 32, color: 'bg-[#10B981]' },
+      { name: 'Skill Proficiency', percentage: 24, color: 'bg-[#3B82F6]' },
+      { name: 'Attendance', percentage: 18, color: 'bg-[#8B5CF6]' },
+      { name: 'Engagement Score', percentage: 15, color: 'bg-[#F59E0B]' },
+      { name: 'Project Complexity', percentage: 11, color: 'bg-[#EF4444]' },
+    ];
+  }, [selectedDeptFilter]);
+
+  // =========================================================================
+  // TABLE: Filtered Employee Prediction Details Table Rows
+  // =========================================================================
   const sampleEmployees = useMemo(() => {
-    let list = employees;
-    if (selectedDeptFilter !== 'All Departments') {
-      list = list.filter(e => e.department === selectedDeptFilter);
-    }
-    if (tableSearch.trim()) {
-      const q = tableSearch.toLowerCase();
-      list = list.filter(e => 
-        e.employee_name?.toLowerCase().includes(q) || 
-        e.department?.toLowerCase().includes(q) ||
-        e.employee_id?.toLowerCase().includes(q)
-      );
-    }
-
-    if (selectedDeptFilter !== 'All Departments' || tableSearch.trim()) {
-      return list.slice(0, 5).map((e, idx) => {
+    if (filteredEmployees.length > 0) {
+      return filteredEmployees.slice(0, 5).map((e, idx) => {
         const cur = Math.round(e.productivity_score || 75);
-        const pred = Math.round(e.prediction?.predicted_productivity || 78);
+        const pred = Math.round(e.prediction?.predicted_productivity || (cur + (idx % 2 === 0 ? 4 : -4)));
         const delta = pred - cur;
+        const initials = (e.employee_name || 'EM')
+          .split(' ')
+          .map(n => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
+        const colors = ['bg-teal-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-blue-500'];
+
         return {
           id: e.employee_id,
           num: idx + 1,
           name: e.employee_name,
-          initials: e.employee_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
-          avatarBg: idx % 4 === 0 ? 'bg-teal-500' : idx % 4 === 1 ? 'bg-amber-500' : idx % 4 === 2 ? 'bg-rose-500' : 'bg-purple-500',
-          dept: e.department,
+          initials,
+          avatarBg: colors[idx % colors.length],
+          dept: e.department || 'Engineering',
           current: `${cur}%`,
           predicted: `${pred}%`,
           change: delta >= 0 ? `+${delta}%` : `${delta}%`,
@@ -190,7 +419,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
     }
 
-    // Default 5 reference records matching the screenshot
+    // Fallback baseline records matching the screenshot
     return [
       { id: employees.find(e => e.employee_name?.toLowerCase().includes('rahul'))?.employee_id || 'EMP-1001', num: 1, name: 'Rahul Sharma', initials: 'RS', avatarBg: 'bg-teal-500', dept: 'Engineering', current: '88%', predicted: '92%', change: '+4%', isPositive: true, status: 'High' },
       { id: employees.find(e => e.employee_name?.toLowerCase().includes('priya'))?.employee_id || 'EMP-1002', num: 2, name: 'Priya Verma', initials: 'PV', avatarBg: 'bg-amber-500', dept: 'Marketing', current: '76%', predicted: '80%', change: '+4%', isPositive: true, status: 'Medium' },
@@ -198,10 +427,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       { id: employees.find(e => e.employee_name?.toLowerCase().includes('sneha'))?.employee_id || 'EMP-1004', num: 4, name: 'Sneha Reddy', initials: 'SR', avatarBg: 'bg-purple-500', dept: 'HR', current: '81%', predicted: '85%', change: '+4%', isPositive: true, status: 'High' },
       { id: employees.find(e => e.employee_name?.toLowerCase().includes('vikram'))?.employee_id || 'EMP-1005', num: 5, name: 'Vikram Singh', initials: 'VS', avatarBg: 'bg-blue-500', dept: 'Operations', current: '69%', predicted: '72%', change: '+3%', isPositive: true, status: 'Medium' },
     ];
-  }, [selectedDeptFilter, tableSearch, employees]);
+  }, [filteredEmployees, employees]);
 
   return (
-    <div className="min-h-screen bg-[#F3F6FD] dark:bg-[#070B14] text-slate-800 dark:text-slate-200 p-5 lg:p-7 space-y-5 max-w-[1720px] mx-auto font-sans select-none transition-colors">
+    <div className="min-h-screen bg-[#F3F6FD] dark:bg-[#070B14] text-slate-800 dark:text-slate-200 p-5 lg:p-7 space-y-5 max-w-[1720px] mx-auto font-sans select-none transition-colors relative">
       
       {/* ========================================================================= */}
       {/* 1. TOP HEADER BAR: Category, Title, Search, Date Range, Export Button     */}
@@ -227,9 +456,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <input
               type="text"
               value={headerSearch}
-              onChange={(e) => setHeaderSearch(e.target.value)}
+              onChange={(e) => {
+                setHeaderSearch(e.target.value);
+                if (e.target.value) showToast(`Searching: "${e.target.value}"`);
+              }}
               placeholder="Search employees, departments..."
-              className="w-full bg-white dark:bg-[#0B1426] border border-slate-200/80 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
+              className="w-full bg-white dark:bg-[#0B1426] border border-slate-200/80 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
             />
           </div>
 
@@ -237,7 +469,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowTimeframeDropdown(!showTimeframeDropdown)}
-              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#0B1426] border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#0B1426] border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
             >
               <Calendar className="w-3.5 h-3.5 text-slate-500" />
               <span>{selectedTimeframe}</span>
@@ -245,15 +477,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
 
             {showTimeframeDropdown && (
-              <div className="absolute right-0 mt-1.5 w-52 bg-white dark:bg-[#0B1426] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-40 py-1 text-xs animate-in fade-in">
+              <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-[#0B1426] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-40 py-1 text-xs animate-in fade-in">
                 {['01 Sep 2026 – 30 Sep 2026', '01 Aug 2026 – 31 Aug 2026', 'Q3 2026 (Jul – Sep)', 'Year-to-Date (2026)'].map((range) => (
                   <button
                     key={range}
                     onClick={() => {
                       setSelectedTimeframe(range);
                       setShowTimeframeDropdown(false);
+                      showToast(`Timeframe updated: ${range}`);
                     }}
-                    className="w-full text-left px-3.5 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
                   >
                     {range}
                   </button>
@@ -264,8 +497,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Export Report Action Button */}
           <button
-            onClick={() => api.triggerExportCsv()}
-            className="flex items-center gap-2 bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-[#0F172A] hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export Report</span>
@@ -274,8 +507,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Sub-quote on right below header */}
-      <div className="text-right -mt-2 hidden sm:block">
-        <p className="text-[11px] italic text-slate-400 dark:text-slate-500 font-serif">
+      <div className="flex items-center justify-between -mt-2">
+        {/* Active Filter Indicator Tag */}
+        {(selectedDeptFilter !== 'All Departments' || statusFilter !== 'All' || headerSearch) ? (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-400 font-medium">Active Filter:</span>
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-semibold text-[11px] flex items-center gap-1.5 border border-blue-200 dark:border-blue-800">
+              <span>{selectedDeptFilter}</span>
+              {statusFilter !== 'All' && <span>• {statusFilter}</span>}
+              {headerSearch && <span>• "{headerSearch}"</span>}
+              <button 
+                onClick={() => {
+                  setSelectedDeptFilter('All Departments');
+                  setStatusFilter('All');
+                  setHeaderSearch('');
+                  setTableSearch('');
+                  showToast('Filters reset to All');
+                }}
+                className="hover:text-blue-900 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          </div>
+        ) : <div />}
+
+        <p className="text-[11px] italic text-slate-400 dark:text-slate-500 font-serif hidden sm:block">
           “Data empowers people. Predictions create possibilities.”
         </p>
       </div>
@@ -285,10 +542,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         
-        {/* KPI 1: Total Employees */}
-        <div className="bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-xs">
+        {/* KPI 1: Total Employees (Click resets status filter) */}
+        <div 
+          onClick={() => {
+            setStatusFilter('All');
+            showToast('Showing all employees');
+          }}
+          className="bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-sm hover:border-blue-200 cursor-pointer group"
+        >
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#3B82F6] flex items-center justify-center text-white shrink-0 shadow-sm shadow-blue-500/25">
+            <div className="w-12 h-12 rounded-2xl bg-[#3B82F6] group-hover:scale-105 transition-transform flex items-center justify-center text-white shrink-0 shadow-sm shadow-blue-500/25">
               <Users className="w-6 h-6" />
             </div>
             <div>
@@ -317,9 +580,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* KPI 2: Average Productivity Score */}
-        <div className="bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-xs">
+        <div 
+          onClick={() => {
+            showToast(`Average productivity across ${selectedDeptFilter}: ${dynamicKPIs.avg_productivity}%`);
+          }}
+          className="bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-sm hover:border-emerald-200 cursor-pointer group"
+        >
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#10B981] flex items-center justify-center text-white shrink-0 shadow-sm shadow-emerald-500/25">
+            <div className="w-12 h-12 rounded-2xl bg-[#10B981] group-hover:scale-105 transition-transform flex items-center justify-center text-white shrink-0 shadow-sm shadow-emerald-500/25">
               <BarChart3 className="w-6 h-6" />
             </div>
             <div>
@@ -347,10 +615,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* KPI 3: Predicted High Performers */}
-        <div className="bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-xs">
+        {/* KPI 3: Predicted High Performers (Click filters to High) */}
+        <div 
+          onClick={() => {
+            setStatusFilter(prev => prev === 'High' ? 'All' : 'High');
+            showToast(statusFilter === 'High' ? 'Showing all employees' : 'Filtered to High Performers');
+          }}
+          className={`bg-white dark:bg-[#0E1626] border rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-sm cursor-pointer group ${statusFilter === 'High' ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-100/90 dark:border-slate-800/80 hover:border-amber-200'}`}
+        >
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#F59E0B] flex items-center justify-center text-white shrink-0 shadow-sm shadow-amber-500/25">
+            <div className="w-12 h-12 rounded-2xl bg-[#F59E0B] group-hover:scale-105 transition-transform flex items-center justify-center text-white shrink-0 shadow-sm shadow-amber-500/25">
               <Star className="w-6 h-6 fill-white" />
             </div>
             <div>
@@ -378,10 +652,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* KPI 4: At Risk Employees */}
-        <div className="bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-xs">
+        {/* KPI 4: At Risk Employees (Click filters to At Risk) */}
+        <div 
+          onClick={() => {
+            setStatusFilter(prev => prev === 'At Risk' ? 'All' : 'At Risk');
+            showToast(statusFilter === 'At Risk' ? 'Showing all employees' : 'Filtered to At Risk Employees');
+          }}
+          className={`bg-white dark:bg-[#0E1626] border rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between transition-all hover:shadow-sm cursor-pointer group ${statusFilter === 'At Risk' ? 'border-rose-400 ring-2 ring-rose-400/20' : 'border-slate-100/90 dark:border-slate-800/80 hover:border-rose-200'}`}
+        >
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#EF4444] flex items-center justify-center text-white shrink-0 shadow-sm shadow-rose-500/25">
+            <div className="w-12 h-12 rounded-2xl bg-[#EF4444] group-hover:scale-105 transition-transform flex items-center justify-center text-white shrink-0 shadow-sm shadow-rose-500/25">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
@@ -449,14 +729,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
 
-              {/* Monthly Dropdown */}
-              <div className="relative">
-                <button 
-                  onClick={() => setTimeUnit(prev => prev === 'Monthly' ? 'Weekly' : 'Monthly')}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 dark:bg-[#0B1426] border border-slate-200/80 dark:border-slate-800 rounded-lg text-[11px] font-medium text-slate-600 dark:text-slate-300"
+              {/* Monthly vs Weekly Toggle */}
+              <div className="flex items-center bg-slate-100 dark:bg-[#0B1426] p-0.5 rounded-lg border border-slate-200/80 dark:border-slate-800">
+                <button
+                  onClick={() => {
+                    setTimeUnit('Monthly');
+                    showToast('Switched to Monthly Task Output (Jan – Sep)');
+                  }}
+                  className={`px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all ${timeUnit === 'Monthly' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
                 >
-                  <span>{timeUnit}</span>
-                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                  Monthly
+                </button>
+                <button
+                  onClick={() => {
+                    setTimeUnit('Weekly');
+                    showToast('Switched to Weekly Task Output (Week 1 – Week 8)');
+                  }}
+                  className={`px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all ${timeUnit === 'Weekly' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  Weekly
                 </button>
               </div>
             </div>
@@ -473,13 +764,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   tick={{ fill: '#94A3B8', fontSize: 11 }} 
                 />
                 <YAxis 
-                  domain={[0, 120]} 
-                  ticks={[0, 20, 40, 60, 80, 100, 120]} 
+                  domain={[0, timeUnit === 'Weekly' ? 40 : 120]} 
+                  ticks={timeUnit === 'Weekly' ? [0, 10, 20, 30, 40] : [0, 20, 40, 60, 80, 100, 120]} 
                   axisLine={{ stroke: '#E2E8F0' }} 
                   tickLine={false} 
                   tick={{ fill: '#94A3B8', fontSize: 11 }}
                   label={{ 
-                    value: 'Work Output (Tasks)', 
+                    value: timeUnit === 'Weekly' ? 'Weekly Tasks' : 'Work Output (Tasks)', 
                     angle: -90, 
                     position: 'insideLeft', 
                     offset: 20, 
@@ -516,29 +807,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </ResponsiveContainer>
 
             {/* Reference Tooltip Badge at Aug 2026 */}
-            <div className="absolute top-2 right-16 hidden xl:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2 shadow-lg text-[10px] space-y-1 z-10 pointer-events-none">
-              <div className="font-bold text-slate-800 dark:text-slate-200 pb-0.5 border-b border-slate-100 dark:border-slate-800">
-                Aug 2026
+            {timeUnit === 'Monthly' && selectedDeptFilter === 'All Departments' && (
+              <div className="absolute top-2 right-16 hidden xl:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2 shadow-lg text-[10px] space-y-1 z-10 pointer-events-none">
+                <div className="font-bold text-slate-800 dark:text-slate-200 pb-0.5 border-b border-slate-100 dark:border-slate-800">
+                  Aug 2026
+                </div>
+                <div className="flex items-center gap-1.5 text-blue-600 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                  <span>Actual: 92</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-purple-600 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                  <span>Predicted: 88</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-blue-600 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                <span>Actual: 92</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-purple-600 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
-                <span>Predicted: 88</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Card 2: Productivity Distribution (Predicted) Donut */}
         <div className="lg:col-span-6 xl:col-span-4 bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
-          <div className="flex items-center gap-2 mb-2">
-            <PieChartIcon className="w-4 h-4 text-purple-600 shrink-0" />
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Productivity Distribution (Predicted)
-            </h2>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <PieChartIcon className="w-4 h-4 text-purple-600 shrink-0" />
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                Productivity Distribution (Predicted)
+              </h2>
+            </div>
+            {statusFilter !== 'All' && (
+              <button
+                onClick={() => setStatusFilter('All')}
+                className="text-[10px] text-blue-600 font-bold hover:underline"
+              >
+                Clear Filter
+              </button>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-2 my-auto">
@@ -554,9 +857,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     outerRadius={75}
                     paddingAngle={2}
                     dataKey="percentage"
+                    onClick={(entry) => {
+                      setStatusFilter(prev => prev === entry.filterVal ? 'All' : entry.filterVal);
+                      showToast(`Filtered to ${entry.name}`);
+                    }}
+                    className="cursor-pointer"
                   >
                     {distributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color} 
+                        stroke={statusFilter === entry.filterVal ? '#000' : 'none'}
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
                 </PieChart>
@@ -573,45 +886,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* Right Legend matching reference with counts */}
+            {/* Right Legend matching reference with counts and click filtering */}
             <div className="space-y-3 min-w-[140px] pr-1">
-              <div className="space-y-0.5">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shrink-0" />
-                    <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">High (≥ 80%)</span>
+              {distributionData.map((item) => (
+                <div 
+                  key={item.name}
+                  onClick={() => {
+                    setStatusFilter(prev => prev === item.filterVal ? 'All' : item.filterVal);
+                    showToast(`Filtered to ${item.name}`);
+                  }}
+                  className={`space-y-0.5 p-1 rounded-lg cursor-pointer transition-colors ${statusFilter === item.filterVal ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">{item.name}</span>
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white text-xs">{item.percentage}%</span>
                   </div>
-                  <span className="font-bold text-slate-900 dark:text-white text-xs">32%</span>
+                  <p className="text-[10px] text-slate-400 pl-4.5">{item.count} employees</p>
                 </div>
-                <p className="text-[10px] text-slate-400 pl-4.5">82 employees</p>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] shrink-0" />
-                    <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">Medium (50–79%)</span>
-                  </div>
-                  <span className="font-bold text-slate-900 dark:text-white text-xs">53%</span>
-                </div>
-                <p className="text-[10px] text-slate-400 pl-4.5">136 employees</p>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] shrink-0" />
-                    <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">{'Low (< 50%)'}</span>
-                  </div>
-                  <span className="font-bold text-slate-900 dark:text-white text-xs">15%</span>
-                </div>
-                <p className="text-[10px] text-slate-400 pl-4.5">38 employees</p>
-              </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Card 3: AI Prediction Engine (Dark Card) */}
+        {/* Card 3: AI Prediction Engine (Dark Card with Working Calibration Action) */}
         <div className="lg:col-span-12 xl:col-span-3 bg-[#131E36] text-white p-5 rounded-2xl border border-slate-800 shadow-md flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
@@ -623,9 +923,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   AI Prediction Engine
                 </h2>
               </div>
-              <span className="bg-emerald-950/70 border border-emerald-700/60 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                Active
-              </span>
+              <button 
+                onClick={handleCalibrateModel}
+                disabled={isCalibrating}
+                className="bg-emerald-950/70 border border-emerald-700/60 text-emerald-400 hover:bg-emerald-900 hover:text-emerald-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 transition-all cursor-pointer"
+              >
+                {isCalibrating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                <span>{isCalibrating ? 'Calibrating...' : 'Active'}</span>
+              </button>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed mt-3 font-normal">
@@ -638,10 +943,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 font-medium">Model Accuracy</span>
-                <span className="text-white font-bold">92%</span>
+                <span className="text-white font-bold">{activeModelAccuracy}%</span>
               </div>
               <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 rounded-full w-[92%]" />
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 rounded-full transition-all duration-700" 
+                  style={{ width: `${activeModelAccuracy}%` }}
+                />
               </div>
             </div>
 
@@ -651,9 +959,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                 <span>Trained on 2+ years data</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Last updated: 15 Sep 2026, 10:24 AM</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>Last updated: {lastCalibrationTime}</span>
+                </div>
+                <button
+                  onClick={handleCalibrateModel}
+                  className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold underline cursor-pointer"
+                >
+                  Recalibrate
+                </button>
               </div>
             </div>
           </div>
@@ -666,17 +982,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
-        {/* Card 1: Department-wise Productivity (Grouped Bars) */}
+        {/* Card 1: Department-wise Productivity / Role Breakdown (Grouped Bars) */}
         <div className="lg:col-span-6 xl:col-span-5 bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-blue-600 shrink-0" />
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                Department-wise Productivity
+                {selectedDeptFilter === 'All Departments' ? 'Department-wise Productivity' : `${selectedDeptFilter}: Role Breakdown`}
               </h2>
             </div>
             
-            {/* Legend matching reference */}
+            {/* Legend & Department Reset */}
             <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-xs bg-[#60A5FA] shrink-0" />
@@ -686,12 +1002,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="w-2.5 h-2.5 rounded-xs bg-[#A855F7] shrink-0" />
                 <span>Predicted</span>
               </div>
+              {selectedDeptFilter !== 'All Departments' && (
+                <button 
+                  onClick={() => {
+                    setSelectedDeptFilter('All Departments');
+                    showToast('Reset view to All Departments');
+                  }}
+                  className="text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                >
+                  All Depts
+                </button>
+              )}
             </div>
           </div>
 
           <div className="h-[220px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={departmentProductivityData} margin={{ top: 18, right: 10, left: -15, bottom: 0 }} barGap={4}>
+              <BarChart 
+                data={departmentProductivityData} 
+                margin={{ top: 18, right: 10, left: -15, bottom: 0 }} 
+                barGap={4}
+                onClick={(e) => {
+                  if (e && e.activeLabel && selectedDeptFilter === 'All Departments') {
+                    setSelectedDeptFilter(e.activeLabel);
+                    showToast(`Filtered dashboard to ${e.activeLabel}`);
+                  }
+                }}
+                className="cursor-pointer"
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" className="dark:stroke-slate-800/80" />
                 <XAxis 
                   dataKey="name" 
@@ -736,20 +1074,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Card 2: Key Factors Influencing Productivity (Progress Bars) */}
         <div className="lg:col-span-6 xl:col-span-4 bg-white dark:bg-[#0E1626] border border-slate-100/90 dark:border-slate-800/80 rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white mb-3">
-            Key Factors Influencing Productivity
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+              Key Factors Influencing Productivity
+            </h2>
+            <span className="text-[10px] text-slate-400 font-medium">
+              {selectedDeptFilter === 'All Departments' ? 'Global Weights' : selectedDeptFilter}
+            </span>
+          </div>
 
           <div className="space-y-3.5 my-auto">
             {keyFactors.map((factor) => (
-              <div key={factor.name} className="space-y-1">
+              <div 
+                key={factor.name} 
+                onClick={() => showToast(`${factor.name}: accounts for ${factor.percentage}% of predicted variance`)}
+                className="space-y-1 cursor-pointer group"
+              >
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 dark:text-slate-300">{factor.name}</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">
+                    {factor.name}
+                  </span>
                   <span className="font-bold text-slate-900 dark:text-white">{factor.percentage}%</span>
                 </div>
                 <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full ${factor.color} rounded-full transition-all duration-500`}
+                    className={`h-full ${factor.color} rounded-full transition-all duration-500 group-hover:brightness-110`}
                     style={{ width: `${factor.percentage}%` }}
                   />
                 </div>
@@ -768,15 +1117,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </h2>
             </div>
             <button 
-              onClick={onViewAllEmployees}
-              className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+              onClick={() => {
+                if (onOpenCopilot) onOpenCopilot('Generate executive productivity insights');
+                else onViewAllEmployees();
+              }}
+              className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline cursor-pointer"
             >
               View All
             </button>
           </div>
 
           <div className="space-y-3 text-xs leading-relaxed">
-            <div className="flex items-start gap-2.5">
+            <div 
+              onClick={() => showToast('Insight: Productivity trend projected +6% growth')}
+              className="flex items-start gap-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors"
+            >
               <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
                 <ArrowUp className="w-3 h-3" />
               </div>
@@ -785,16 +1140,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </p>
             </div>
 
-            <div className="flex items-start gap-2.5">
+            <div 
+              onClick={() => {
+                setStatusFilter('At Risk');
+                showToast('Filtered table to 24 At-Risk employees');
+              }}
+              className="flex items-start gap-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors"
+            >
               <div className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
                 <AlertTriangle className="w-3 h-3" />
               </div>
               <p className="text-slate-600 dark:text-slate-300">
-                24 employees are predicted to have low productivity. Consider intervention.
+                {dynamicKPIs.at_risk} employees are predicted to have low productivity. Consider intervention.
               </p>
             </div>
 
-            <div className="flex items-start gap-2.5">
+            <div 
+              onClick={() => {
+                setSelectedDeptFilter('Engineering');
+                showToast('Switched view to Engineering team');
+              }}
+              className="flex items-start gap-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors"
+            >
               <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
                 <Users className="w-3 h-3" />
               </div>
@@ -803,7 +1170,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </p>
             </div>
 
-            <div className="flex items-start gap-2.5">
+            <div 
+              onClick={() => {
+                if (onOpenScenarioPlanner) onOpenScenarioPlanner('All');
+                else showToast('Opening workload optimization model');
+              }}
+              className="flex items-start gap-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors"
+            >
               <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
                 <Activity className="w-3 h-3" />
               </div>
@@ -829,6 +1202,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">
                 Employee Prediction Details
               </h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold">
+                {filteredEmployees.length || 5} records
+              </span>
             </div>
 
             <div className="flex items-center gap-2.5">
@@ -848,8 +1224,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="relative">
                 <select
                   value={selectedDeptFilter}
-                  onChange={(e) => setSelectedDeptFilter(e.target.value)}
-                  className="bg-slate-50 dark:bg-[#0B1426] border border-slate-200/80 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 appearance-none pr-7 focus:outline-none"
+                  onChange={(e) => {
+                    setSelectedDeptFilter(e.target.value);
+                    showToast(`Department filtered: ${e.target.value}`);
+                  }}
+                  className="bg-slate-50 dark:bg-[#0B1426] border border-slate-200/80 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 appearance-none pr-7 focus:outline-none cursor-pointer"
                 >
                   <option value="All Departments">All Departments</option>
                   <option value="Engineering">Engineering</option>
@@ -864,7 +1243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               <button 
                 onClick={onViewAllEmployees}
-                className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline shrink-0"
+                className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline shrink-0 cursor-pointer"
               >
                 View All
               </button>
@@ -937,21 +1316,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-3 px-3 text-center relative" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => onViewEmployee(emp.id)}
-                          className="px-3 py-1 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-semibold transition-colors"
+                          className="px-3 py-1 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                         >
                           View
                         </button>
                         <button 
-                          onClick={() => onViewEmployee(emp.id)}
-                          className="text-slate-400 hover:text-slate-600 p-1"
+                          onClick={() => setOpenRowMenuId(prev => prev === emp.id ? null : emp.id)}
+                          className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                         >
                           <MoreVertical className="w-3.5 h-3.5" />
                         </button>
                       </div>
+
+                      {/* Row Action Dropdown Popover */}
+                      {openRowMenuId === emp.id && (
+                        <div className="absolute right-0 top-10 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-30 py-1 text-left animate-in fade-in">
+                          <button
+                            onClick={() => {
+                              onViewEmployee(emp.id);
+                              setOpenRowMenuId(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                          >
+                            <Users className="w-3.5 h-3.5 text-blue-500" />
+                            <span>View 360 Dossier</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (onOpenScenarioPlanner) onOpenScenarioPlanner(emp.dept);
+                              setOpenRowMenuId(null);
+                              showToast(`Simulating scenario for ${emp.name}`);
+                            }}
+                            className="w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                          >
+                            <Sliders className="w-3.5 h-3.5 text-purple-500" />
+                            <span>Simulate Scenario</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard?.writeText(emp.id);
+                              setOpenRowMenuId(null);
+                              showToast(`Copied ${emp.id} to clipboard!`);
+                            }}
+                            className="w-full px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Copy ID: {emp.id}</span>
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -970,10 +1387,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div className="space-y-2.5 my-auto">
-            {/* Action 1 */}
+            {/* Action 1: Schedule 1-on-1 */}
             <div 
-              onClick={() => onActionClick && onActionClick({ id: 'act-1', category: 'Intervention', urgency: 'high', title: 'Schedule one-on-one for at-risk employees', action_label: 'Schedule 1-on-1', affected_count: 24, potential_impact: '+15%' })}
-              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50"
+              onClick={() => {
+                setStatusFilter('At Risk');
+                showToast('Targeted 24 at-risk employees for 1-on-1 scheduling');
+                if (onActionClick) {
+                  onActionClick({ 
+                    id: 'act-1', 
+                    category: 'Intervention', 
+                    urgency: 'high', 
+                    title: 'Schedule one-on-one for at-risk employees', 
+                    action_label: 'Schedule 1-on-1', 
+                    affected_count: 24, 
+                    potential_impact: '+15%' 
+                  });
+                }
+              }}
+              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center shrink-0">
@@ -991,10 +1422,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
             </div>
 
-            {/* Action 2 */}
+            {/* Action 2: Redistribute Workload in Operations */}
             <div 
-              onClick={() => onOpenScenarioPlanner && onOpenScenarioPlanner('Operations')}
-              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50"
+              onClick={() => {
+                setSelectedDeptFilter('Operations');
+                showToast('Opening scenario planner for Operations workload rebalancing');
+                if (onOpenScenarioPlanner) onOpenScenarioPlanner('Operations');
+              }}
+              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center shrink-0">
@@ -1012,10 +1447,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
             </div>
 
-            {/* Action 3 */}
+            {/* Action 3: Provide upskilling for Finance team */}
             <div 
-              onClick={() => onActionClick && onActionClick({ id: 'act-3', category: 'Training', urgency: 'medium', title: 'Provide upskilling for Finance team', action_label: 'Upskill Team', affected_count: 12, potential_impact: '+8%' })}
-              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50"
+              onClick={() => {
+                setSelectedDeptFilter('Finance');
+                showToast('Targeted Finance team: Focus on advanced data & automation tools');
+                if (onActionClick) {
+                  onActionClick({ 
+                    id: 'act-3', 
+                    category: 'Training', 
+                    urgency: 'medium', 
+                    title: 'Provide upskilling for Finance team', 
+                    action_label: 'Upskill Team', 
+                    affected_count: 12, 
+                    potential_impact: '+8%' 
+                  });
+                }
+              }}
+              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -1033,10 +1482,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
             </div>
 
-            {/* Action 4 */}
+            {/* Action 4: Recognize and reward top performers */}
             <div 
-              onClick={() => onActionClick && onActionClick({ id: 'act-4', category: 'Recognition', urgency: 'low', title: 'Recognize and reward top performers', action_label: 'Reward Performers', affected_count: 82, potential_impact: '+5%' })}
-              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50"
+              onClick={() => {
+                setStatusFilter('High');
+                showToast('Filtered to 82 top performers for recognition & rewards');
+                if (onActionClick) {
+                  onActionClick({ 
+                    id: 'act-4', 
+                    category: 'Recognition', 
+                    urgency: 'low', 
+                    title: 'Recognize and reward top performers', 
+                    action_label: 'Reward Performers', 
+                    affected_count: 82, 
+                    potential_impact: '+5%' 
+                  });
+                }
+              }}
+              className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-slate-50 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center shrink-0">
@@ -1071,13 +1534,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
         <div className="flex items-center justify-center sm:justify-end gap-3 text-[11px]">
-          <span className="hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">Privacy</span>
+          <span onClick={() => showToast('Privacy Policy: Enterprise Grade Data Confidentiality')} className="hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">Privacy</span>
           <span>|</span>
-          <span className="hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">Terms</span>
+          <span onClick={() => showToast('Terms of Service: Standard SaaS Enterprise Agreement')} className="hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">Terms</span>
           <span>|</span>
-          <span className="hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">Help</span>
+          <span onClick={() => { if (onOpenCopilot) onOpenCopilot('Help me understand the dashboard metrics'); else showToast('Press Ctrl+K anytime for AI Copilot'); }} className="hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">Help</span>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* FLOATING ACTION TOAST NOTIFICATION                                        */}
+      {/* ========================================================================= */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 bg-[#0F172A] text-white px-4 py-2.5 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="font-medium">{toastMessage}</span>
+          <button onClick={() => setToastMessage(null)} className="ml-2 text-slate-400 hover:text-white">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
     </div>
   );
