@@ -189,3 +189,167 @@ class Notification(Base):
     category = Column(String(50), default="info")  # info, warning, success, risk
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(100), unique=True, index=True, nullable=False)
+    email = Column(String(200), unique=True, index=True, nullable=False)
+    full_name = Column(String(200), default="NARASIMHA")
+    role = Column(String(50), default="Super Admin")  # Super Admin, HR Director, HR Manager, Recruiter, Department Manager, Analyst, Viewer
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class JobRole(Base):
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), index=True, nullable=False)
+    department = Column(String(100), index=True, nullable=False)
+    location = Column(String(100), default="Remote")
+    required_skills = Column(Text, default="[]")  # JSON list
+    preferred_skills = Column(Text, default="[]")  # JSON list
+    min_experience = Column(Float, default=1.0)
+    max_experience = Column(Float, default=10.0)
+    education = Column(String(100), default="Bachelor's Degree")
+    min_salary = Column(Float, default=60000.0)
+    max_salary = Column(Float, default=120000.0)
+    employment_type = Column(String(50), default="Full-Time")
+    description = Column(Text, default="")
+    status = Column(String(50), default="Active")  # Active, Archived, Draft
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Candidate(Base):
+    __tablename__ = "candidates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    candidate_id = Column(String(100), unique=True, index=True, nullable=False)
+    name = Column(String(200), index=True, nullable=False)
+    email = Column(String(200), index=True, nullable=False)
+    phone = Column(String(50), default="")
+    location = Column(String(100), default="Remote")
+    role_id = Column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
+    role_title = Column(String(200), default="Software Engineer")
+    department = Column(String(100), default="Engineering")
+    experience = Column(Float, default=2.0)
+    skills = Column(Text, default="[]")  # JSON list
+    education = Column(String(100), default="Bachelor's Degree")
+    expected_salary = Column(Float, default=90000.0)
+    availability = Column(String(50), default="Immediate")
+    notice_period = Column(String(50), default="30 days")
+    source = Column(String(100), default="LinkedIn")
+    resume_url = Column(String(255), nullable=True)
+    resume_text = Column(Text, default="")
+    portfolio_url = Column(String(255), default="")
+    linkedin_url = Column(String(255), default="")
+    status = Column(String(50), default="New", index=True)  # New, Screening, Shortlisted, Interview, Offer, Hired, Rejected, On Hold
+    match_score = Column(Float, default=75.0)
+    match_breakdown = Column(Text, default="{}")  # JSON
+    converted_employee_id = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class CandidateSkill(Base):
+    __tablename__ = "candidate_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    candidate_id = Column(String(100), ForeignKey("candidates.candidate_id", ondelete="CASCADE"), index=True, nullable=False)
+    skill_name = Column(String(100), nullable=False)
+    proficiency_level = Column(String(50), default="Intermediate")
+    is_match = Column(Boolean, default=True)
+
+class Interview(Base):
+    __tablename__ = "interviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    candidate_id = Column(String(100), ForeignKey("candidates.candidate_id", ondelete="CASCADE"), index=True, nullable=False)
+    candidate_name = Column(String(200), nullable=False)
+    role_id = Column(Integer, nullable=True)
+    role_title = Column(String(200), default="")
+    interviewer = Column(String(100), default="NARASIMHA")
+    scheduled_time = Column(String(100), nullable=False)
+    interview_type = Column(String(50), default="Technical")
+    status = Column(String(50), default="Scheduled")  # Scheduled, Completed, Cancelled
+    feedback = Column(Text, default="")
+    rating = Column(Float, default=4.0)
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    entity_type = Column(String(50), default="employee")  # employee, candidate, department, report
+    entity_id = Column(String(100), index=True, nullable=False)
+    title = Column(String(255), nullable=False)
+    task_type = Column(String(100), default="Performance Review")
+    due_date = Column(String(50), default="")
+    priority = Column(String(50), default="Medium")  # High, Medium, Low
+    status = Column(String(50), default="Pending")  # Pending, In Progress, Completed
+    assigned_to = Column(String(100), default="NARASIMHA")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Note(Base):
+    __tablename__ = "notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    entity_type = Column(String(50), default="employee")  # employee, candidate, department, dataset, model
+    entity_id = Column(String(100), index=True, nullable=False)
+    content = Column(Text, nullable=False)
+    author = Column(String(100), default="NARASIMHA")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class DatasetVersion(Base):
+    __tablename__ = "dataset_versions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    dataset_id = Column(Integer, nullable=True)
+    version_tag = Column(String(50), nullable=False)
+    dataset_name = Column(String(255), nullable=False)
+    record_count = Column(Integer, default=0)
+    column_count = Column(Integer, default=0)
+    quality_score = Column(Float, default=100.0)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class ModelMetric(Base):
+    __tablename__ = "model_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    model_id = Column(Integer, nullable=True)
+    metric_name = Column(String(100), nullable=False)
+    metric_value = Column(Float, nullable=False)
+    dataset_version = Column(String(50), default="v1.0")
+    evaluation_date = Column(DateTime, default=datetime.utcnow)
+
+class SavedFilter(Base):
+    __tablename__ = "saved_filters"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    filter_type = Column(String(50), default="global")
+    filter_json = Column(Text, nullable=False)
+    user = Column(String(100), default="NARASIMHA")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class DashboardLayout(Base):
+    __tablename__ = "dashboard_layouts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user = Column(String(100), default="NARASIMHA", index=True)
+    layout_json = Column(Text, default="{}")
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+class EmployeeMetric(Base):
+    __tablename__ = "employee_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(String(100), ForeignKey("employees.employee_id", ondelete="CASCADE"), index=True, nullable=False)
+    period = Column(String(50), nullable=False)
+    productivity_score = Column(Float, default=75.0)
+    workload = Column(Float, default=70.0)
+    attendance = Column(Float, default=90.0)
+    engagement = Column(Float, default=75.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

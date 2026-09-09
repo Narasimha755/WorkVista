@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from app.models import Dataset, Employee, Prediction, Department, ModelRecord, AuditLog, Setting
+from app.models import Dataset, DatasetVersion, Employee, Prediction, Department, ModelRecord, AuditLog, Setting
 from app.services.column_mapper import auto_detect_columns
 from app.services.data_cleaner import clean_dataset
 from app.ml.pipeline import ml_pipeline
@@ -98,6 +98,21 @@ def process_and_persist_dataset(
     db.add(dataset_record)
     db.commit()
     db.refresh(dataset_record)
+
+    # 3b. Record Dataset Version
+    db.query(DatasetVersion).update({"is_active": False})
+    v_count = db.query(DatasetVersion).count() + 1
+    version_record = DatasetVersion(
+        dataset_id=dataset_record.id,
+        version_tag=f"v{v_count}.0",
+        dataset_name=original_name,
+        record_count=stats["total_rows"],
+        column_count=stats["total_columns"],
+        quality_score=stats["quality_score"],
+        is_active=True
+    )
+    db.add(version_record)
+    db.commit()
 
     # 4. Train ML model on cleaned dataset
     train_results = ml_pipeline.train(

@@ -10,7 +10,19 @@ from app.models.base import (
     Report,
     Setting,
     AuditLog,
-    Notification
+    Notification,
+    User,
+    JobRole,
+    Candidate,
+    CandidateSkill,
+    Interview,
+    Task,
+    Note,
+    DatasetVersion,
+    ModelMetric,
+    SavedFilter,
+    DashboardLayout,
+    EmployeeMetric
 )
 
 __all__ = [
@@ -25,5 +37,17 @@ __all__ = [
     "Report",
     "Setting",
     "AuditLog",
-    "Notification"
+    "Notification",
+    "User",
+    "JobRole",
+    "Candidate",
+    "CandidateSkill",
+    "Interview",
+    "Task",
+    "Note",
+    "DatasetVersion",
+    "ModelMetric",
+    "SavedFilter",
+    "DashboardLayout",
+    "EmployeeMetric"
 ]

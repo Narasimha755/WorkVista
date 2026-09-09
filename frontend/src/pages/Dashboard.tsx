@@ -15,7 +15,15 @@ import {
   FileText, 
   Database,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Activity,
+  CheckCircle2,
+  ExternalLink,
+  ShieldAlert,
+  BrainCircuit,
+  Building2,
+  GitCompare,
+  Sliders
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -30,8 +38,9 @@ import {
   Scatter,
   Cell
 } from 'recharts';
-import { CardMaximizeModal } from '../components/modals/CardMaximizeModal';
-import { DashboardData, RecommendedActionItem } from '../types';
+import { AnalyticsMaximizeWorkspace } from '../components/analytics/AnalyticsMaximizeWorkspace';
+import { GlobalFilterBar } from '../components/layout/GlobalFilterBar';
+import { DashboardData, RecommendedActionItem, Employee, MaximizeTargetType, GlobalFilterState, AuditLogItem } from '../types';
 import { api } from '../services/api';
 
 interface DashboardProps {
@@ -49,15 +58,6 @@ interface DashboardProps {
   onOpenCompare?: () => void;
 }
 
-type MaximizeType = 
-  | 'productivity_trend' 
-  | 'department_performance' 
-  | 'workforce_health' 
-  | 'risk_performance' 
-  | 'key_insights' 
-  | 'recent_activity' 
-  | null;
-
 export const Dashboard: React.FC<DashboardProps> = ({
   data: initialData,
   loading,
@@ -67,71 +67,216 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onViewAllEmployees,
   onOpenCopilot,
   onOpenScenarioPlanner,
+  onOpenCompare
 }) => {
   const [data, setData] = useState<DashboardData | null>(initialData);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [activeTimeframe, setActiveTimeframe] = useState<'7D' | '30D' | '90D' | '1Y'>('1Y');
-  const [maximizedCard, setMaximizedCard] = useState<MaximizeType>(null);
-  const [hoveredScatterEmployee, setHoveredScatterEmployee] = useState<any>({
-    name: 'Rahul Sharma',
-    department: 'Engineering',
-    productivity: 82.4,
-    predicted: 88.1,
-    risk_score: 18.5,
-    risk_level: 'Low'
+  const [maximizedCard, setMaximizedCard] = useState<MaximizeTargetType>(null);
+  const [hoveredScatterEmployee, setHoveredScatterEmployee] = useState<any>(null);
+
+  // Global Cross-Filter State
+  const [filters, setFilters] = useState<GlobalFilterState>({
+    department: 'All',
+    role: 'All',
+    performance_status: 'All',
+    risk_level: 'All',
+    experience_cohort: 'All',
+    date_range: 'All',
+    search: ''
   });
 
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
 
-  const kpis = data?.kpis;
+  // Fetch full employee records for cross-filtering and deep analytical inspection
+  useEffect(() => {
+    api.getEmployees({ page: 1, page_size: 520 })
+      .then((res) => {
+        if (res?.items) setEmployees(res.items);
+      })
+      .catch((err) => console.error('Failed to load employee telemetry:', err));
 
-  // 12-Month Data for Productivity Trend matching reference
-  const productivityTrendData = useMemo(() => [
-    { month: 'Jan', actual: 62, predicted: 65, lower: 55, upper: 72 },
-    { month: 'Feb', actual: 69, predicted: 67, lower: 60, upper: 76 },
-    { month: 'Mar', actual: 74, predicted: 70, lower: 63, upper: 79 },
-    { month: 'Apr', actual: 73, predicted: 72, lower: 65, upper: 81 },
-    { month: 'May', actual: 76, predicted: 74, lower: 67, upper: 83 },
-    { month: 'Jun', actual: 77, predicted: 73, lower: 66, upper: 82 },
-    { month: 'Jul', actual: 78, predicted: 74, lower: 68, upper: 84 },
-    { month: 'Aug', actual: 79, predicted: 75, lower: 68, upper: 85 },
-    { month: 'Sep', actual: 78, predicted: 76, lower: 69, upper: 86 },
-    { month: 'Oct', actual: 80, predicted: 77, lower: 70, upper: 87 },
-    { month: 'Nov', actual: 81, predicted: 79, lower: 72, upper: 89 },
-    { month: 'Dec', actual: 83, predicted: 81, lower: 74, upper: 91 },
-  ], []);
+    api.getAuditLogs(6)
+      .then((res) => {
+        if (res && Array.isArray(res)) setAuditLogs(res);
+      })
+      .catch((err) => console.error('Failed to load audit logs:', err));
+  }, [initialData]);
 
-  // Department Performance rows matching reference
-  const departmentsData = [
-    { name: 'Engineering', percentage: 88.4, delta: 4.2, isUp: true, color: '#3B82F6' },
-    { name: 'Sales', percentage: 76.1, delta: 1.8, isUp: true, color: '#06B6D4' },
-    { name: 'Marketing', percentage: 72.3, delta: 1.1, isUp: false, color: '#8B5CF6' },
-    { name: 'Operations', percentage: 68.9, delta: 2.6, isUp: true, color: '#F97316' },
-    { name: 'HR', percentage: 82.7, delta: 3.4, isUp: true, color: '#EC4899' },
-  ];
+  // Filtered employees based on active cross-filters
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((e) => {
+      if (filters.department !== 'All' && e.department !== filters.department) return false;
+      if (filters.role !== 'All' && e.role !== filters.role) return false;
+      if (filters.performance_status !== 'All') {
+        const perf = e.performance_rating || (e.productivity_score >= 80 ? 'High' : e.productivity_score < 50 ? 'Low' : 'Medium');
+        if (perf !== filters.performance_status) return false;
+      }
+      if (filters.risk_level !== 'All') {
+        const risk = e.prediction?.risk_score ?? 25;
+        if (filters.risk_level === 'High' && risk < 60) return false;
+        if (filters.risk_level === 'Medium' && (risk < 30 || risk >= 60)) return false;
+        if (filters.risk_level === 'Low' && risk >= 30) return false;
+      }
+      if (filters.experience_cohort !== 'All') {
+        const exp = e.experience || 0;
+        if (filters.experience_cohort === '0-2' && exp > 2) return false;
+        if (filters.experience_cohort === '3-5' && (exp < 3 || exp > 5)) return false;
+        if (filters.experience_cohort === '6-8' && (exp < 6 || exp > 8)) return false;
+        if (filters.experience_cohort === '9+' && exp < 9) return false;
+      }
+      if (filters.search.trim()) {
+        const q = filters.search.toLowerCase();
+        const matchName = e.employee_name?.toLowerCase().includes(q);
+        const matchId = e.employee_id?.toLowerCase().includes(q);
+        const matchDept = e.department?.toLowerCase().includes(q);
+        const matchRole = e.role?.toLowerCase().includes(q);
+        if (!matchName && !matchId && !matchDept && !matchRole) return false;
+      }
+      return true;
+    });
+  }, [employees, filters]);
 
-  // Scatter plot points matching reference
-  const scatterPoints = useMemo(() => [
-    { x: 82.4, y: 18.5, dept: 'Engineering', name: 'Rahul Sharma', color: '#3B82F6', pred: 88.1, rLevel: 'Low', z: 12 },
-    { x: 74.0, y: 22.0, dept: 'Engineering', name: 'Priya Patel', color: '#3B82F6', pred: 79.0, rLevel: 'Low', z: 8 },
-    { x: 91.0, y: 14.0, dept: 'Engineering', name: 'Aarav Mehta', color: '#3B82F6', pred: 94.0, rLevel: 'Low', z: 10 },
-    { x: 68.0, y: 35.0, dept: 'Sales', name: 'Vikram Singh', color: '#10B981', pred: 71.0, rLevel: 'Moderate', z: 9 },
-    { x: 85.0, y: 28.0, dept: 'Sales', name: 'Neha Gupta', color: '#10B981', pred: 87.0, rLevel: 'Low', z: 7 },
-    { x: 62.0, y: 44.0, dept: 'Marketing', name: 'Ananya Roy', color: '#8B5CF6', pred: 65.0, rLevel: 'Moderate', z: 8 },
-    { x: 77.0, y: 31.0, dept: 'Marketing', name: 'Rohan Joshi', color: '#8B5CF6', pred: 80.0, rLevel: 'Low', z: 6 },
-    { x: 58.0, y: 62.0, dept: 'Operations', name: 'Kavita Nair', color: '#F59E0B', pred: 60.0, rLevel: 'High', z: 9 },
-    { x: 49.0, y: 71.0, dept: 'Operations', name: 'Aditya Rao', color: '#F59E0B', pred: 52.0, rLevel: 'Critical', z: 8 },
-    { x: 84.0, y: 19.0, dept: 'HR', name: 'Sneha Verma', color: '#EC4899', pred: 86.0, rLevel: 'Low', z: 7 },
-    { x: 79.0, y: 25.0, dept: 'HR', name: 'Manish Kumar', color: '#EC4899', pred: 81.0, rLevel: 'Low', z: 6 },
-    { x: 65.0, y: 48.0, dept: 'Operations', name: 'Tanvi Shah', color: '#F59E0B', pred: 67.0, rLevel: 'Moderate', z: 7 },
-    { x: 88.0, y: 16.0, dept: 'Engineering', name: 'Karan Dave', color: '#3B82F6', pred: 90.0, rLevel: 'Low', z: 10 },
-    { x: 71.0, y: 38.0, dept: 'Sales', name: 'Deepak Seth', color: '#10B981', pred: 74.0, rLevel: 'Moderate', z: 8 },
-    { x: 93.0, y: 12.0, dept: 'Engineering', name: 'Ishita Sen', color: '#3B82F6', pred: 95.0, rLevel: 'Low', z: 11 },
-    { x: 42.0, y: 78.0, dept: 'Operations', name: 'Gaurav Jain', color: '#F59E0B', pred: 45.0, rLevel: 'Critical', z: 9 },
-    { x: 76.0, y: 29.0, dept: 'Marketing', name: 'Pooja Hegde', color: '#8B5CF6', pred: 78.0, rLevel: 'Low', z: 7 },
-    { x: 81.0, y: 21.0, dept: 'HR', name: 'Rajesh Pillai', color: '#EC4899', pred: 83.0, rLevel: 'Low', z: 8 },
-  ], []);
+  // Derived KPIs dynamically recalculated when filters are applied
+  const dynamicKPIs = useMemo(() => {
+    const list = filteredEmployees.length > 0 || (filters.department !== 'All' || filters.role !== 'All' || filters.risk_level !== 'All' || filters.performance_status !== 'All')
+      ? filteredEmployees
+      : employees;
+
+    const total = list.length;
+    const avgProd = total > 0 ? (list.reduce((acc, e) => acc + (e.productivity_score || 0), 0) / total).toFixed(1) : '78.9';
+    const highPerf = list.filter((e) => (e.productivity_score || 0) >= 80).length;
+    const atRisk = list.filter((e) => (e.prediction?.risk_score || 0) >= 60).length;
+    const predImprove = list.filter((e) => (e.prediction?.predicted_productivity || 0) > (e.productivity_score || 0)).length;
+    const predDecline = list.filter((e) => (e.prediction?.predicted_productivity || 0) < (e.productivity_score || 0)).length;
+
+    return {
+      total_employees: total || data?.kpis?.total_employees?.value || 520,
+      avg_productivity: avgProd,
+      high_performers: highPerf || data?.kpis?.high_performers?.value || 235,
+      at_risk: atRisk,
+      predicted_improvement: predImprove || 259,
+      predicted_decline: predDecline || 250
+    };
+  }, [filteredEmployees, employees, filters, data]);
+
+  // Live Department Performance derived from real employee telemetry or backend data
+  const liveDepartmentsData = useMemo(() => {
+    const deptMap: Record<string, { count: number; totalProd: number; color: string }> = {
+      Engineering: { count: 0, totalProd: 0, color: '#3B82F6' },
+      Sales: { count: 0, totalProd: 0, color: '#06B6D4' },
+      Marketing: { count: 0, totalProd: 0, color: '#8B5CF6' },
+      Operations: { count: 0, totalProd: 0, color: '#F97316' },
+      HR: { count: 0, totalProd: 0, color: '#EC4899' },
+      Finance: { count: 0, totalProd: 0, color: '#10B981' }
+    };
+
+    const targetList = filteredEmployees.length > 0 ? filteredEmployees : employees;
+
+    targetList.forEach((e) => {
+      const dept = e.department || 'General';
+      if (!deptMap[dept]) {
+        deptMap[dept] = { count: 0, totalProd: 0, color: '#3B82F6' };
+      }
+      deptMap[dept].count += 1;
+      deptMap[dept].totalProd += e.productivity_score || 0;
+    });
+
+    return Object.entries(deptMap)
+      .filter(([_, val]) => val.count > 0)
+      .map(([name, val]) => {
+        const avg = Number((val.totalProd / val.count).toFixed(1));
+        return {
+          name,
+          percentage: avg,
+          delta: Number((avg - 75.0).toFixed(1)),
+          isUp: avg >= 75.0,
+          color: val.color,
+          headcount: val.count
+        };
+      })
+      .sort((a, b) => b.percentage - a.percentage);
+  }, [filteredEmployees, employees]);
+
+  // Live Scatter Plot Points derived from real employee records
+  const liveScatterPoints = useMemo(() => {
+    const targetList = (filteredEmployees.length > 0 ? filteredEmployees : employees).slice(0, 45);
+    const deptColors: Record<string, string> = {
+      Engineering: '#3B82F6',
+      Sales: '#10B981',
+      Marketing: '#8B5CF6',
+      Operations: '#F59E0B',
+      HR: '#EC4899',
+      Finance: '#06B6D4'
+    };
+
+    return targetList.map((e) => ({
+      x: e.productivity_score || 75,
+      y: e.prediction?.risk_score ?? 25,
+      dept: e.department || 'General',
+      name: e.employee_name,
+      id: e.employee_id,
+      color: deptColors[e.department] || '#3B82F6',
+      pred: e.prediction?.predicted_productivity ?? e.productivity_score,
+      rLevel: (e.prediction?.risk_score ?? 25) >= 60 ? 'Critical' : (e.prediction?.risk_score ?? 25) >= 30 ? 'Moderate' : 'Low',
+      employee: e
+    }));
+  }, [filteredEmployees, employees]);
+
+  // Dynamic Cohort / Trajectory Line from backend actual_vs_predicted or real employee telemetry cohorts
+  const productivityTrendData = useMemo(() => {
+    const trendList = (data as any)?.productivity_trend || (data as any)?.actual_vs_predicted;
+    if (trendList && trendList.length > 0) {
+      return trendList.map((pt: any) => {
+        const act = Number((pt.actual_score ?? pt.actual ?? 75).toFixed(1));
+        const pred = Number((pt.predicted_score ?? pt.predicted ?? 76).toFixed(1));
+        return {
+          month: pt.period || pt.month || pt.label || 'Cohort',
+          actual: act,
+          predicted: pred,
+          lower: Math.max(0, Math.round(pred - 5)),
+          upper: Math.min(100, Math.round(pred + 5))
+        };
+      });
+    }
+    const targetList = filteredEmployees.length > 0 ? filteredEmployees : employees;
+    if (targetList.length > 0) {
+      const depts = Array.from(new Set(targetList.map(e => e.department || 'General'))).slice(0, 6);
+      return depts.map(d => {
+        const emps = targetList.filter(e => (e.department || 'General') === d);
+        const avgAct = emps.length > 0 ? Number((emps.reduce((s, e) => s + (e.productivity_score || 0), 0) / emps.length).toFixed(1)) : 75;
+        const avgPred = emps.length > 0 ? Number((emps.reduce((s, e) => s + (e.prediction?.predicted_productivity ?? e.productivity_score ?? 75), 0) / emps.length).toFixed(1)) : avgAct;
+        return {
+          month: d,
+          actual: avgAct,
+          predicted: avgPred,
+          lower: Math.max(0, Math.round(avgPred - 5)),
+          upper: Math.min(100, Math.round(avgPred + 5))
+        };
+      });
+    }
+    return [];
+  }, [data, filteredEmployees, employees]);
+
+  // Dynamic Workforce Health metrics derived from data and active telemetry
+  const dynamicHealthMetrics = useMemo(() => {
+    const healthScore = data?.workforce_health?.score 
+      ?? Math.min(100, Math.max(0, Math.round(Number(dynamicKPIs.avg_productivity) * 0.4 + (100 - (dynamicKPIs.at_risk / Math.max(1, dynamicKPIs.total_employees)) * 100) * 0.4 + (dynamicKPIs.high_performers / Math.max(1, dynamicKPIs.total_employees)) * 20)));
+
+    const engagementVal = data?.workforce_health?.breakdown?.engagement 
+      ?? (filteredEmployees.length > 0 ? Number((filteredEmployees.reduce((s, e) => s + (e.engagement || e.productivity_score || 85), 0) / filteredEmployees.length).toFixed(1)) : 91.2);
+
+    const stabilityStatus = healthScore >= 80 ? 'Optimal' : healthScore >= 65 ? 'Stable' : 'Attention';
+
+    return {
+      score: healthScore,
+      engagement: engagementVal,
+      status: stabilityStatus
+    };
+  }, [data, dynamicKPIs, filteredEmployees]);
 
   // Loading skeleton
   if (loading && !data) {
@@ -170,7 +315,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onClick={onOpenUpload}
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors"
           >
-            <span>Upload CSV</span>
+            <span>Upload Dataset</span>
           </button>
         </div>
       </div>
@@ -178,79 +323,92 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1120] text-slate-200 p-5 lg:p-6 space-y-4 max-w-[1720px] mx-auto font-sans relative selection:bg-cyan-500/30 selection:text-cyan-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-200 p-5 lg:p-6 space-y-4 max-w-[1720px] mx-auto font-sans relative selection:bg-cyan-500/30 selection:text-cyan-300 transition-colors">
       
       {/* ========================================================================= */}
-      {/* 1. HERO / HEADER AREA: Welcome back, NARASIMHA + Quote + Mountain Silhouette */}
+      {/* 1. HERO / HEADER AREA: Welcome back, NARASIMHA + Quote */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-2xl bg-[#0B1426]/70 border border-slate-800/80 p-5 px-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#0B1426]/70 border border-slate-200 dark:border-slate-800/80 p-5 px-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs">
         
-        {/* Abstract dark-blue mountain/data-wave silhouette background */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-25 select-none">
-          <svg 
-            className="w-full h-full object-cover" 
-            viewBox="0 0 1200 240" 
-            preserveAspectRatio="none" 
-            fill="none"
-          >
-            <path 
-              d="M0 240 L0 140 Q 150 60, 300 130 T 600 100 T 900 150 T 1200 90 L 1200 240 Z" 
-              fill="#172A46" 
-            />
-            <path 
-              d="M0 240 L0 180 Q 200 110, 400 160 T 800 130 T 1200 170 L 1200 240 Z" 
-              fill="#101F35" 
-            />
-            <path 
-              d="M0 240 L0 205 Q 350 160, 700 190 T 1200 195 L 1200 240 Z" 
-              fill="#0D182A" 
-            />
+        {/* Silhouette waves */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10 dark:opacity-25 select-none">
+          <svg className="w-full h-full object-cover" viewBox="0 0 1200 240" preserveAspectRatio="none" fill="none">
+            <path d="M0 240 L0 140 Q 150 60, 300 130 T 600 100 T 900 150 T 1200 90 L 1200 240 Z" fill="#172A46" />
+            <path d="M0 240 L0 180 Q 200 110, 400 160 T 800 130 T 1200 170 L 1200 240 Z" fill="#101F35" />
+            <path d="M0 240 L0 205 Q 350 160, 700 190 T 1200 195 L 1200 240 Z" fill="#0D182A" />
           </svg>
         </div>
 
-        {/* Left: Greeting & Heading */}
+        {/* Left: Greeting */}
         <div className="relative z-10">
-          <div className="text-xs italic font-serif text-slate-400 tracking-wide">
+          <div className="text-xs italic font-serif text-slate-500 dark:text-slate-400 tracking-wide">
             &laquo; Welcome <span className="not-italic text-slate-500 font-sans">back,</span>
           </div>
-          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-white mt-0.5">
+          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white mt-0.5">
             NARASIMHA
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Here's your workforce at a glance.
           </p>
         </div>
 
-        {/* Right: Elegant Corporate Quote matching reference */}
+        {/* Right: Quote */}
         <div className="relative z-10 text-right hidden sm:block">
-          <p className="text-xs italic text-slate-300 font-serif leading-relaxed">
+          <p className="text-xs italic text-slate-600 dark:text-slate-300 font-serif leading-relaxed">
             &ldquo;Better people insights<br />build stronger tomorrows.&rdquo;
           </p>
           <div className="text-[10px] uppercase font-mono tracking-widest text-slate-500 mt-1 font-semibold flex items-center justify-end gap-1.5">
-            <span className="w-5 h-[1px] bg-slate-700" />
+            <span className="w-5 h-[1px] bg-slate-300 dark:bg-slate-700" />
             <span>WORKVISTA</span>
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. KPI ROW: 6 Compact Premium Cards matching reference image */}
+      {/* GLOBAL CROSS-FILTER BAR */}
+      {/* ========================================================================= */}
+      <GlobalFilterBar
+        filters={filters}
+        onChange={(upd) => setFilters((prev) => ({ ...prev, ...upd }))}
+        onReset={() =>
+          setFilters({
+            department: 'All',
+            role: 'All',
+            performance_status: 'All',
+            risk_level: 'All',
+            experience_cohort: 'All',
+            date_range: 'All',
+            search: ''
+          })
+        }
+        totalRecordsCount={employees.length || 520}
+        filteredRecordsCount={filteredEmployees.length}
+      />
+
+      {/* ========================================================================= */}
+      {/* 2. KPI ROW: 6 Compact Premium Cards with Maximize Buttons */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         
         {/* 1. Total Employees */}
-        <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center">
-              <Users className="w-3.5 h-3.5" />
+        <div 
+          onClick={() => setMaximizedCard('total_employees')}
+          className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 hover:border-blue-500/50 rounded-xl p-3.5 flex flex-col justify-between shadow-xs cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Users className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">Total Staff</span>
             </div>
-            <span className="text-xs font-medium text-slate-400 truncate">Total Employees</span>
+            <Maximize2 className="w-3 h-3 text-slate-400 dark:text-slate-600 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white tracking-tight">
-              {kpis?.total_employees?.value ?? 520}
+            <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {dynamicKPIs.total_employees}
             </span>
-            <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
               <ArrowUp className="w-3 h-3" /> 2.1%
             </span>
           </div>
@@ -262,18 +420,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* 2. Avg. Productivity */}
-        <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-cyan-600/20 text-cyan-400 flex items-center justify-center">
-              <BarChart3 className="w-3.5 h-3.5" />
+        <div 
+          onClick={() => setMaximizedCard('avg_productivity')}
+          className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 hover:border-cyan-500/50 rounded-xl p-3.5 flex flex-col justify-between shadow-xs cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-cyan-50 dark:bg-cyan-600/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                <BarChart3 className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">Productivity</span>
             </div>
-            <span className="text-xs font-medium text-slate-400 truncate">Avg. Productivity</span>
+            <Maximize2 className="w-3 h-3 text-slate-400 dark:text-slate-600 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white tracking-tight">
-              {kpis?.avg_productivity?.value ? `${kpis.avg_productivity.value}%` : '78.9%'}
+            <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {dynamicKPIs.avg_productivity}%
             </span>
-            <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
               <ArrowUp className="w-3 h-3" /> 1.4%
             </span>
           </div>
@@ -285,18 +449,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* 3. High Performers */}
-        <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
-              <Star className="w-3.5 h-3.5" />
+        <div 
+          onClick={() => setMaximizedCard('high_performers')}
+          className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 hover:border-emerald-500/50 rounded-xl p-3.5 flex flex-col justify-between shadow-xs cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Star className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">High Performers</span>
             </div>
-            <span className="text-xs font-medium text-slate-400 truncate">High Performers</span>
+            <Maximize2 className="w-3 h-3 text-slate-400 dark:text-slate-600 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white tracking-tight">
-              {kpis?.high_performers?.value ?? 235}
+            <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {dynamicKPIs.high_performers}
             </span>
-            <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
               <ArrowUp className="w-3 h-3" /> 5.2%
             </span>
           </div>
@@ -308,18 +478,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* 4. At Risk */}
-        <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-rose-600/20 text-rose-400 flex items-center justify-center">
-              <AlertTriangle className="w-3.5 h-3.5" />
+        <div 
+          onClick={() => setMaximizedCard('at_risk')}
+          className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 hover:border-rose-500/50 rounded-xl p-3.5 flex flex-col justify-between shadow-xs cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-600/20 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <AlertTriangle className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">At Risk</span>
             </div>
-            <span className="text-xs font-medium text-slate-400 truncate">At Risk</span>
+            <Maximize2 className="w-3 h-3 text-slate-400 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white tracking-tight">
-              {kpis?.at_risk?.value ?? 6}
+            <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {dynamicKPIs.at_risk}
             </span>
-            <span className="text-xs font-semibold text-rose-400 flex items-center gap-0.5">
+            <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-0.5">
               <ArrowDown className="w-3 h-3" /> 1.1%
             </span>
           </div>
@@ -331,18 +507,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* 5. Predicted Improvement */}
-        <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center">
-              <TrendingUp className="w-3.5 h-3.5" />
+        <div 
+          onClick={() => setMaximizedCard('predicted_improvement')}
+          className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/50 rounded-xl p-3.5 flex flex-col justify-between shadow-xs cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-purple-50 dark:bg-purple-600/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">Ascending</span>
             </div>
-            <span className="text-xs font-medium text-slate-400 truncate">Predicted Improvement</span>
+            <Maximize2 className="w-3 h-3 text-slate-400 dark:text-slate-600 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white tracking-tight">
-              {kpis?.predicted_improvement?.value ?? 259}
+            <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {dynamicKPIs.predicted_improvement}
             </span>
-            <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
               <ArrowUp className="w-3 h-3" /> 12.3%
             </span>
           </div>
@@ -354,18 +536,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* 6. Predicted Decline */}
-        <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center">
-              <TrendingDown className="w-3.5 h-3.5" />
+        <div 
+          onClick={() => setMaximizedCard('predicted_decline')}
+          className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 hover:border-amber-500/50 rounded-xl p-3.5 flex flex-col justify-between shadow-xs cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-600/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <TrendingDown className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">Declining</span>
             </div>
-            <span className="text-xs font-medium text-slate-400 truncate">Predicted Decline</span>
+            <Maximize2 className="w-3 h-3 text-slate-400 dark:text-slate-600 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white tracking-tight">
-              {kpis?.predicted_decline?.value ?? 250}
+            <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {dynamicKPIs.predicted_decline}
             </span>
-            <span className="text-xs font-semibold text-amber-400 flex items-center gap-0.5">
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
               <ArrowDown className="w-3 h-3" /> 1.4%
             </span>
           </div>
@@ -383,245 +571,242 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         
         {/* LEFT: Productivity Trend (Actual vs Predicted) */}
-        <div className="lg:col-span-6 xl:col-span-6 bg-[#0F172A] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+        <div className="lg:col-span-6 xl:col-span-6 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="text-sm font-bold text-white leading-tight">Productivity Trend</h2>
-              <p className="text-[11px] text-slate-400">Actual vs Predicted</p>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Productivity Dynamics</h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {(data as any)?.has_temporal_data ? 'Longitudinal Trajectory' : 'Actual vs Predicted by Cohort'}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               {/* Timeframe selector pills */}
-              <div className="flex items-center bg-[#090E1A] p-0.5 rounded-lg border border-slate-800">
+              <div className="flex items-center bg-slate-100 dark:bg-[#090E1A] p-0.5 rounded-lg border border-slate-200 dark:border-slate-800">
                 {(['7D', '30D', '90D', '1Y'] as const).map(tf => (
                   <button
                     key={tf}
                     onClick={() => setActiveTimeframe(tf)}
                     className={`px-2 py-0.5 text-[10px] font-semibold rounded transition-colors ${
                       activeTimeframe === tf 
-                        ? 'bg-blue-600 text-white' 
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     {tf}
                   </button>
                 ))}
               </div>
+
+              {/* Maximize Icon */}
               <button 
                 onClick={() => setMaximizedCard('productivity_trend')}
-                className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-                title="Maximize chart"
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                title="Expand to Full Analytics Workspace"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Line / Area Chart */}
-          <div className="h-56 w-full mt-1">
+          {/* Recharts Area + Line */}
+          <div className="h-56 w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={productivityTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="confidenceRange" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#38BDF8" stopOpacity={0.12} />
-                    <stop offset="95%" stopColor="#38BDF8" stopOpacity={0.01} />
+                  <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="bandGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.08} />
+                    <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="#1E293B" strokeDasharray="3 3" vertical={false} />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#64748B" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
-                />
-                <YAxis 
-                  stroke="#64748B" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  domain={[0, 100]}
-                  ticks={[0, 25, 50, 75, 100]}
-                  tickFormatter={v => `${v}%`}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#94A3B8" strokeOpacity={0.25} vertical={false} />
+                <XAxis dataKey="month" stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis domain={[50, 100]} stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
                 <RechartsTooltip 
-                  contentStyle={{ backgroundColor: '#090E1A', borderColor: '#1E293B', borderRadius: '8px', fontSize: '11px', color: '#fff' }}
-                  itemStyle={{ padding: 0 }}
-                  formatter={(value: any) => [`${value}%`]}
+                  contentStyle={{ 
+                    backgroundColor: '#0F172A', 
+                    borderColor: '#334155', 
+                    borderRadius: '0.75rem',
+                    fontSize: '11px',
+                    color: '#F8FAFC'
+                  }} 
                 />
-                {/* Confidence Range Shading */}
-                <Area type="monotone" dataKey="upper" stroke="none" fill="url(#confidenceRange)" />
-                <Area type="monotone" dataKey="lower" stroke="none" fill="#0F172A" />
-
-                {/* Actual Line (Cyan / Blue) */}
-                <Line 
-                  type="monotone" 
-                  dataKey="actual" 
-                  stroke="#38BDF8" 
-                  strokeWidth={2} 
-                  dot={{ r: 3, fill: '#38BDF8', strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: '#38BDF8' }}
-                  name="Actual"
-                />
-
-                {/* Predicted Line (Purple dashed) */}
-                <Line 
-                  type="monotone" 
-                  dataKey="predicted" 
-                  stroke="#A855F7" 
-                  strokeWidth={2} 
-                  strokeDasharray="4 4"
-                  dot={{ r: 3, fill: '#A855F7', strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: '#A855F7' }}
-                  name="Predicted"
-                />
+                <Area type="monotone" dataKey="upper" stroke="none" fill="url(#bandGradient)" />
+                <Area type="monotone" dataKey="actual" stroke="#3B82F6" strokeWidth={2.5} fill="url(#actualGradient)" />
+                <Line type="monotone" dataKey="predicted" stroke="#06B6D4" strokeWidth={2} strokeDasharray="4 4" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Bottom Chart Legend matching reference */}
-          <div className="flex items-center justify-center gap-5 mt-2 pt-2 border-t border-slate-800/60 text-[11px] text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#38BDF8]" />
-              <span>Actual</span>
+          {/* Legend Strip */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800/80 text-[10px] text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-[2.5px] bg-[#3B82F6] rounded-full" />
+                <span>Actual</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-[2px] bg-[#06B6D4] rounded-full border-t border-dashed border-[#06B6D4]" />
+                <span>Predicted</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-xs" />
+                <span>Confidence Band</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#A855F7]" />
-              <span>Predicted</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-2 rounded bg-cyan-500/20 border border-cyan-500/40" />
-              <span>Confidence Range</span>
-            </div>
+            <span className="text-[10px] text-slate-500 font-mono">
+              RMSE: {data?.prediction_engine?.rmse ?? 3.12} · R²: {data?.prediction_engine?.r2_score ?? 0.884}
+            </span>
           </div>
         </div>
 
-        {/* CENTER: Department Performance */}
-        <div className="lg:col-span-3 xl:col-span-3 bg-[#0F172A] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-white">Department Performance</h2>
+        {/* MIDDLE: Department Performance Horizontal Bars */}
+        <div className="lg:col-span-3 xl:col-span-3 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Department Performance</h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">By productivity rate</p>
+            </div>
             <button 
-              onClick={onViewAllEmployees}
-              className="text-[11px] font-semibold text-blue-400 hover:text-cyan-300 flex items-center gap-0.5 transition-colors"
+              onClick={() => setMaximizedCard('department_performance')}
+              className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+              title="Expand Department Analysis"
             >
-              <span>View All</span>
-              <ChevronRight className="w-3 h-3" />
+              <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* Progress Rows */}
-          <div className="space-y-3.5 my-auto">
-            {departmentsData.map(d => (
-              <div key={d.name} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-medium">{d.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">{d.percentage}%</span>
-                    <span className={`text-[10px] font-semibold flex items-center ${d.isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {d.isUp ? '↑' : '↓'} {d.delta}%
+          {/* Bars list */}
+          <div className="space-y-3 my-auto">
+            {liveDepartmentsData.map(dept => (
+              <div key={dept.name} className="space-y-1">
+                <div className="flex items-center justify-between text-xs font-medium">
+                  <span className="text-slate-700 dark:text-slate-300">{dept.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-900 dark:text-white font-bold">{dept.percentage}%</span>
+                    <span className={`text-[10px] flex items-center font-semibold ${dept.isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {dept.isUp ? '+' : ''}{dept.delta}%
                     </span>
                   </div>
                 </div>
-                <div className="w-full bg-[#090E1A] h-2 rounded-full overflow-hidden border border-slate-800">
+                {/* Progress bar container */}
+                <div className="w-full bg-slate-100 dark:bg-[#090E1A] h-2 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800/60">
                   <div 
                     className="h-full rounded-full transition-all duration-500" 
-                    style={{ width: `${d.percentage}%`, backgroundColor: d.color }} 
+                    style={{ width: `${dept.percentage}%`, backgroundColor: dept.color }}
                   />
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Department Bottom Action */}
+          <button 
+            onClick={() => onOpenScenarioPlanner && onOpenScenarioPlanner('Engineering')}
+            className="w-full mt-2 py-1.5 bg-slate-100 dark:bg-[#090E1A] hover:bg-slate-200 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center gap-1"
+          >
+            <span>Simulate Org Shifts</span>
+            <ChevronRight className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+          </button>
         </div>
 
-        {/* RIGHT: Workforce Health Gauge */}
-        <div className="lg:col-span-3 xl:col-span-3 bg-[#0F172A] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+        {/* RIGHT: Workforce Health Gauge Card */}
+        <div className="lg:col-span-3 xl:col-span-3 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-white">Workforce Health</h2>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Workforce Health</h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Overall telemetry score</p>
+            </div>
             <button 
               onClick={() => setMaximizedCard('workforce_health')}
-              className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-              title="Maximize card"
+              className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+              title="Expand Workforce Health"
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* Semi-circular Cyan Gauge */}
-          <div className="relative flex flex-col items-center justify-center my-auto py-2">
-            <svg className="w-36 h-28 overflow-visible" viewBox="0 0 160 100">
-              {/* Background Track */}
-              <path
-                d="M 20 90 A 60 60 0 0 1 140 90"
-                fill="none"
-                stroke="#1E293B"
-                strokeWidth="12"
-                strokeLinecap="round"
-              />
-              {/* Cyan Progress Arc (78.9%) */}
-              <path
-                d="M 20 90 A 60 60 0 0 1 140 90"
-                fill="none"
-                stroke="#06B6D4"
-                strokeWidth="12"
-                strokeDasharray="188.4"
-                strokeDashoffset={188.4 * (1 - 0.789)}
-                strokeLinecap="round"
+          {/* Circular Gauge */}
+          <div className="relative flex items-center justify-center my-auto py-2">
+            <svg className="w-36 h-36 transform -rotate-90">
+              <circle cx="72" cy="72" r="54" className="stroke-slate-200 dark:stroke-slate-800" strokeWidth="10" fill="transparent" />
+              <circle 
+                cx="72" 
+                cy="72" 
+                r="54" 
+                stroke="#10B981" 
+                strokeWidth="10" 
+                fill="transparent" 
+                strokeDasharray={339.29} 
+                strokeDashoffset={339.29 * (1 - (dynamicHealthMetrics.score / 100))} 
+                strokeLinecap="round" 
+                className="transition-all duration-1000 ease-out" 
               />
             </svg>
-
-            {/* Inner Content */}
-            <div className="absolute top-9 flex flex-col items-center">
-              <div className="w-6 h-6 rounded-full bg-cyan-950/60 text-cyan-400 flex items-center justify-center mb-0.5">
-                <Leaf className="w-3 h-3" />
-              </div>
-              <span className="text-2xl font-black text-white leading-none">78.9</span>
-              <span className="text-[10px] font-bold text-emerald-400 mt-0.5">Healthy</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
+                {dynamicHealthMetrics.score}
+              </span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">
+                out of 100
+              </span>
             </div>
           </div>
 
-          {/* Summary Text */}
-          <p className="text-[11px] text-slate-400 text-center leading-relaxed mt-2">
-            Workforce health is stable, with improving engagement across departments.
-          </p>
+          {/* Bottom Pills */}
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 dark:border-slate-800/80 text-center">
+            <div className="bg-slate-100 dark:bg-[#090E1A] p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
+              <span className="text-[9px] text-slate-500 uppercase font-semibold">Engagement</span>
+              <div className="text-xs font-bold text-slate-900 dark:text-white">{dynamicHealthMetrics.engagement}%</div>
+            </div>
+            <div className="bg-slate-100 dark:bg-[#090E1A] p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
+              <span className="text-[9px] text-slate-500 uppercase font-semibold">Stability</span>
+              <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{dynamicHealthMetrics.status}</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. SECOND ANALYTICS ROW: Scatter Plot, Key Insights, Recent Activity */}
+      {/* 4. MAIN ANALYTICS AREA (Row 2): Risk vs Perf, Key Insights, Recent Activity */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         
-        {/* LEFT: Employee Risk vs Performance Scatter Plot */}
-        <div className="lg:col-span-6 xl:col-span-5 bg-[#0F172A] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs relative">
-          <div className="flex items-center justify-between mb-1">
+        {/* LEFT: Risk vs. Performance Scatter Plot */}
+        <div className="lg:col-span-6 xl:col-span-5.5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="text-sm font-bold text-white leading-tight">Employee Risk vs Performance</h2>
-              <p className="text-[11px] text-slate-400">Each dot represents an employee</p>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Risk vs. Performance</h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Employee distribution (click dot for 360 dossier)</p>
             </div>
             <button 
-              onClick={() => setMaximizedCard('risk_performance')}
-              className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-              title="Maximize card"
+              onClick={() => setMaximizedCard('risk_matrix')}
+              className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+              title="Expand Risk Matrix"
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="relative flex items-center justify-between h-56 mt-2">
-            {/* Scatter Graph Area */}
-            <div className="flex-1 h-full relative">
+          {/* Scatter Chart */}
+          <div className="flex items-center gap-2">
+            <div className="h-56 flex-1 relative">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 15, right: 15, bottom: 15, left: -20 }}>
-                  <CartesianGrid stroke="#1E293B" strokeDasharray="3 3" />
+                <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#94A3B8" strokeOpacity={0.25} />
                   <XAxis 
                     type="number" 
                     dataKey="x" 
-                    name="Productivity Score" 
-                    domain={[0, 100]} 
-                    ticks={[0, 50, 100]} 
+                    name="Productivity" 
+                    domain={[30, 100]} 
+                    ticks={[30, 65, 100]} 
                     stroke="#64748B" 
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
                   />
                   <YAxis 
                     type="number" 
@@ -630,20 +815,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     domain={[0, 100]} 
                     ticks={[0, 50, 100]} 
                     stroke="#64748B" 
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
                   />
                   <Scatter 
-                    data={scatterPoints} 
+                    data={liveScatterPoints} 
                     onMouseEnter={(node) => setHoveredScatterEmployee(node)}
+                    onClick={(node) => onViewEmployee(node.id || node.employee?.employee_id)}
                   >
-                    {scatterPoints.map((entry, index) => (
+                    {liveScatterPoints.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color} 
-                        opacity={0.85}
-                        cursor="pointer"
+                        opacity={0.85} 
+                        cursor="pointer" 
                       />
                     ))}
                   </Scatter>
@@ -651,51 +837,55 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </ResponsiveContainer>
 
               {/* Axis labels */}
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] text-slate-500 font-medium">
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
                 Productivity Score
               </span>
-              <span className="absolute top-1/2 left-0 -translate-y-1/2 -rotate-90 text-[9px] text-slate-500 font-medium origin-left">
+              <span className="absolute top-1/2 left-0 -translate-y-1/2 -rotate-90 text-[9px] text-slate-400 dark:text-slate-500 font-medium origin-left">
                 Risk Score
               </span>
 
-              {/* Floating Rahul Sharma Tooltip Card matching reference */}
+              {/* Tooltip Card */}
               {hoveredScatterEmployee && (
-                <div className="absolute top-6 left-1/4 bg-[#090E1A]/95 border border-cyan-500/40 rounded-xl p-2.5 shadow-xl text-left pointer-events-none z-20 min-w-[150px] backdrop-blur-sm animate-fadeIn">
-                  <div className="flex items-center gap-2 pb-1.5 border-b border-slate-800">
-                    <div className="w-5 h-5 rounded-full bg-blue-600/30 text-blue-300 flex items-center justify-center text-[10px] font-bold">
-                      {hoveredScatterEmployee.name?.charAt(0) || 'R'}
+                <div 
+                  className="pointer-events-none absolute top-4 left-1/4 bg-white/95 dark:bg-[#090E1A]/95 border border-cyan-500/50 rounded-xl p-2.5 shadow-xl text-left z-20 min-w-[170px] backdrop-blur-sm animate-in fade-in"
+                >
+                  <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200 dark:border-slate-800">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-600/30 text-blue-700 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold">
+                      {hoveredScatterEmployee.name?.charAt(0) || 'E'}
                     </div>
                     <div>
-                      <div className="text-[11px] font-bold text-white leading-tight">
+                      <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight">
                         {hoveredScatterEmployee.name}
                       </div>
-                      <div className="text-[9px] text-slate-400">
-                        {hoveredScatterEmployee.department || hoveredScatterEmployee.dept}
+                      <div className="text-[9px] text-slate-500 dark:text-slate-400">
+                        {hoveredScatterEmployee.dept} ({hoveredScatterEmployee.id})
                       </div>
                     </div>
                   </div>
                   <div className="mt-1.5 space-y-0.5 text-[10px]">
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
                       <span>Productivity</span>
-                      <span className="text-white font-semibold">{hoveredScatterEmployee.productivity || hoveredScatterEmployee.x}%</span>
+                      <span className="text-slate-900 dark:text-white font-semibold">{hoveredScatterEmployee.x}%</span>
                     </div>
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
                       <span>Predicted</span>
-                      <span className="text-cyan-300 font-semibold">{hoveredScatterEmployee.predicted || hoveredScatterEmployee.pred}%</span>
+                      <span className="text-cyan-600 dark:text-cyan-300 font-semibold">{hoveredScatterEmployee.pred}%</span>
                     </div>
-                    <div className="flex justify-between text-slate-400">
-                      <span>Risk Score</span>
-                      <span className="text-emerald-400 font-semibold">
-                        {hoveredScatterEmployee.risk_score || hoveredScatterEmployee.y}% ({hoveredScatterEmployee.risk_level || hoveredScatterEmployee.rLevel})
-                      </span>
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                      <span>Flight Risk</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{hoveredScatterEmployee.y}%</span>
                     </div>
+                  </div>
+                  <div className="mt-1.5 pt-1 border-t border-slate-200 dark:border-slate-800 text-[9px] text-blue-600 dark:text-blue-400 font-medium flex items-center justify-between">
+                    <span>Click for 360 Dossier</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Department Color Legend on Right */}
-            <div className="w-24 pl-2 space-y-2 text-[10px] text-slate-400 shrink-0">
+            {/* Department Legend */}
+            <div className="w-24 pl-2 space-y-2 text-[10px] text-slate-600 dark:text-slate-400 shrink-0">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#3B82F6]" />
                 <span>Engineering</span>
@@ -721,176 +911,216 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* CENTER: Key Insights Card */}
-        <div className="lg:col-span-3 xl:col-span-3.5 bg-[#0F172A] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+        <div className="lg:col-span-3 xl:col-span-3.5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-white">Key Insights</h2>
-            <button 
-              onClick={() => onOpenCopilot && onOpenCopilot()}
-              className="text-[11px] font-semibold text-blue-400 hover:text-cyan-300 flex items-center gap-0.5 transition-colors"
-            >
-              <span>View All</span>
-              <ChevronRight className="w-3 h-3" />
-            </button>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Key Insights</h2>
+            <div className="flex items-center gap-1.5">
+              <button 
+                onClick={() => setMaximizedCard('key_insights')}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                title="Maximize Key Insights"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                onClick={() => onOpenCopilot && onOpenCopilot()}
+                className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-cyan-500 dark:hover:text-cyan-300 flex items-center gap-0.5 transition-colors"
+              >
+                <span>Copilot</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
-          {/* 4 Insight Rows */}
+          {/* Dynamic Key Insights */}
           <div className="space-y-2 my-auto">
-            {/* 1. Productivity is stable */}
-            <div 
-              onClick={() => onOpenCopilot && onOpenCopilot('Analyze productivity stability')}
-              className="p-2 rounded-lg bg-[#090E1A]/80 border border-slate-800 hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
-            >
-              <div className="w-6 h-6 rounded-lg bg-cyan-950/60 text-cyan-400 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">Productivity is stable</div>
-                <div className="text-[10px] text-slate-400 truncate">Overall productivity remains steady at 78.9%.</div>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-300 transition-colors shrink-0" />
-            </div>
+            {data?.key_insights && data.key_insights.length > 0 ? (
+              data.key_insights.slice(0, 4).map((insight: any, idx: number) => {
+                const isWarn = insight.type === 'risk' || insight.type === 'warning';
+                const isStar = insight.type === 'performance' || insight.type === 'positive';
+                const Icon = isWarn ? AlertTriangle : isStar ? Star : TrendingUp;
+                const iconColor = isWarn 
+                  ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
+                  : isStar
+                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400';
 
-            {/* 2. Workload rising in Operations */}
-            <div 
-              onClick={() => onOpenScenarioPlanner && onOpenScenarioPlanner('Operations')}
-              className="p-2 rounded-lg bg-[#090E1A]/80 border border-slate-800 hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
-            >
-              <div className="w-6 h-6 rounded-lg bg-blue-950/60 text-blue-400 flex items-center justify-center shrink-0">
-                <Users className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">Workload rising in Operations</div>
-                <div className="text-[10px] text-slate-400 truncate">14% increase in workload may impact future performance.</div>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-300 transition-colors shrink-0" />
-            </div>
+                return (
+                  <div 
+                    key={insight.id || idx}
+                    onClick={() => onOpenCopilot && onOpenCopilot(insight.message)}
+                    className="p-2 rounded-lg bg-slate-50 dark:bg-[#090E1A]/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
+                  >
+                    <div className={`w-6 h-6 rounded-lg ${iconColor} flex items-center justify-center shrink-0`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {insight.badge || (isWarn ? 'Retention Alert' : isStar ? 'Top Performer' : 'Productivity Insight')}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {insight.message}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors shrink-0" />
+                  </div>
+                );
+              })
+            ) : (
+              <>
+                <div 
+                  onClick={() => onOpenCopilot && onOpenCopilot('Analyze productivity stability across departments')}
+                  className="p-2 rounded-lg bg-slate-50 dark:bg-[#090E1A]/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">Productivity Velocity</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Workforce average at {dynamicKPIs.avg_productivity}% across {dynamicKPIs.total_employees} staff.</div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors shrink-0" />
+                </div>
 
-            {/* 3. Engineering shows strong growth */}
-            <div 
-              onClick={() => onOpenCopilot && onOpenCopilot('Review Engineering growth')}
-              className="p-2 rounded-lg bg-[#090E1A]/80 border border-slate-800 hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
-            >
-              <div className="w-6 h-6 rounded-lg bg-amber-950/60 text-amber-400 flex items-center justify-center shrink-0">
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">Engineering shows strong growth</div>
-                <div className="text-[10px] text-slate-400 truncate">Highest predicted improvement (+12.3%).</div>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-300 transition-colors shrink-0" />
-            </div>
+                <div 
+                  onClick={() => onOpenCopilot && onOpenCopilot(`Investigate top performers in ${liveDepartmentsData[0]?.name || 'Engineering'}`)}
+                  className="p-2 rounded-lg bg-slate-50 dark:bg-[#090E1A]/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Star className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{liveDepartmentsData[0]?.name || 'Engineering'} Leads</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{dynamicKPIs.high_performers} high performers with {liveDepartmentsData[0]?.percentage || 80}% avg output.</div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors shrink-0" />
+                </div>
 
-            {/* 4. 6 employees at critical risk */}
-            <div 
-              onClick={() => onViewAllEmployees()}
-              className="p-2 rounded-lg bg-[#090E1A]/80 border border-slate-800 hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
-            >
-              <div className="w-6 h-6 rounded-lg bg-rose-950/60 text-rose-400 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">6 employees at critical risk</div>
-                <div className="text-[10px] text-slate-400 truncate">Immediate attention recommended.</div>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-300 transition-colors shrink-0" />
-            </div>
+                <div 
+                  onClick={() => onOpenCopilot && onOpenCopilot('Analyze flight risks and retention alerts')}
+                  className="p-2 rounded-lg bg-slate-50 dark:bg-[#090E1A]/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">Retention Warning</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{dynamicKPIs.at_risk} team members flagged above risk threshold.</div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors shrink-0" />
+                </div>
+
+                <div 
+                  onClick={() => onOpenCopilot && onOpenCopilot('Evaluate attendance and overtime impact on burnout')}
+                  className="p-2 rounded-lg bg-slate-50 dark:bg-[#090E1A]/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-center gap-2.5 cursor-pointer transition-colors group"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">Trajectory Projection</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{dynamicKPIs.predicted_improvement} staff projected to increase velocity.</div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors shrink-0" />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* RIGHT: Recent Activity Timeline */}
-        <div className="lg:col-span-3 xl:col-span-3.5 bg-[#0F172A] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
+        <div className="lg:col-span-3 xl:col-span-3 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-white">Recent Activity</h2>
-            <button 
-              onClick={onViewAllEmployees}
-              className="text-[11px] font-semibold text-blue-400 hover:text-cyan-300 flex items-center gap-0.5 transition-colors"
-            >
-              <span>View All</span>
-              <ChevronRight className="w-3 h-3" />
-            </button>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Recent Activity</h2>
+            <div className="flex items-center gap-1.5">
+              <button 
+                onClick={() => setMaximizedCard('recent_activity')}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                title="Maximize Activity Log"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                onClick={onViewAllEmployees}
+                className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-cyan-500 dark:hover:text-cyan-300 flex items-center gap-0.5 transition-colors"
+              >
+                <span>View All</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
-          {/* Timeline entries */}
+          {/* Dynamic Audit Activity entries */}
           <div className="space-y-3 my-auto">
-            {/* 1 */}
-            <div className="flex items-start gap-2.5 text-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0 shadow-[0_0_6px_#10b981]" />
-              <div className="min-w-0 flex-1">
-                <div className="text-white font-semibold leading-snug">Model trained successfully</div>
-                <div className="text-[10px] text-slate-400">v1.2 · 520 records</div>
-              </div>
-              <span className="text-[10px] text-slate-500 shrink-0">10:42 AM</span>
-            </div>
+            {auditLogs.length > 0 ? (
+              auditLogs.slice(0, 5).map((log, idx) => {
+                const isModel = log.action?.includes('MODEL') || log.action?.includes('TRAIN');
+                const isData = log.action?.includes('DATA') || log.action?.includes('UPLOAD');
+                const isAlert = log.action?.includes('RISK') || log.action?.includes('FLAG');
+                const dotColor = isAlert 
+                  ? 'bg-rose-500 dark:bg-rose-400 shadow-[0_0_6px_#f43f5e]' 
+                  : isModel 
+                  ? 'bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_6px_#10b981]' 
+                  : isData 
+                  ? 'bg-blue-500 dark:bg-blue-400 shadow-[0_0_6px_#3b82f6]' 
+                  : 'bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_6px_#06b6d4]';
 
-            {/* 2 */}
-            <div className="flex items-start gap-2.5 text-xs">
-              <span className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0 shadow-[0_0_6px_#60a5fa]" />
-              <div className="min-w-0 flex-1">
-                <div className="text-white font-semibold leading-snug">Prediction completed</div>
-                <div className="text-[10px] text-slate-400">Generated predictions for 520 employees</div>
-              </div>
-              <span className="text-[10px] text-slate-500 shrink-0">09:18 AM</span>
-            </div>
+                const formattedAction = (log.action || 'System Event').replace(/_/g, ' ').toLowerCase();
+                const displayAction = formattedAction.charAt(0).toUpperCase() + formattedAction.slice(1);
+                const timeStr = log.created_at ? new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent';
 
-            {/* 3 */}
-            <div className="flex items-start gap-2.5 text-xs">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 mt-1.5 shrink-0 shadow-[0_0_6px_#22d3ee]" />
-              <div className="min-w-0 flex-1">
-                <div className="text-white font-semibold leading-snug">Dataset updated</div>
-                <div className="text-[10px] text-slate-400">Enterprise Dataset</div>
-              </div>
-              <span className="text-[10px] text-slate-500 shrink-0">Yesterday</span>
-            </div>
-
-            {/* 4 */}
-            <div className="flex items-start gap-2.5 text-xs">
-              <span className="w-2 h-2 rounded-full bg-rose-400 mt-1.5 shrink-0 shadow-[0_0_6px_#f43f5e]" />
-              <div className="min-w-0 flex-1">
-                <div className="text-white font-semibold leading-snug">3 employees flagged at risk</div>
-                <div className="text-[10px] text-slate-400">Requires attention</div>
-              </div>
-              <span className="text-[10px] text-slate-500 shrink-0">Yesterday</span>
-            </div>
-
-            {/* 5 */}
-            <div className="flex items-start gap-2.5 text-xs">
-              <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0 shadow-[0_0_6px_#fbbf24]" />
-              <div className="min-w-0 flex-1">
-                <div className="text-white font-semibold leading-snug">New note added</div>
-                <div className="text-[10px] text-slate-400">For Rahul Sharma</div>
-              </div>
-              <span className="text-[10px] text-slate-500 shrink-0">Dec 28</span>
-            </div>
+                return (
+                  <div key={log.id || idx} className="flex items-start gap-2.5 text-xs">
+                    <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dotColor}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-slate-900 dark:text-white font-semibold leading-snug truncate">
+                        {displayAction}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {log.details || `Logged by ${log.user || 'NARASIMHA'}`}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 font-mono">
+                      {timeStr}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              [
+                { action: 'Model calibrated successfully', details: `${data?.prediction_engine?.model_name || 'Random Forest'} · ${dynamicKPIs.total_employees} records`, time: 'Active', color: 'emerald' },
+                { action: 'Predictions synchronized', details: `${dynamicKPIs.total_employees} employee trajectories updated`, time: 'Synced', color: 'blue' },
+                { action: 'Dataset telemetry verified', details: `${(data as any)?.dataset_name || 'Enterprise Telemetry (v1.0)'}`, time: 'Loaded', color: 'cyan' },
+                { action: 'Risk monitor active', details: `${dynamicKPIs.at_risk} retention alerts tracked`, time: 'Live', color: 'rose' },
+                { action: 'Audit log initialized', details: 'Automated governance tracking enabled', time: 'Ready', color: 'amber' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-start gap-2.5 text-xs">
+                  <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${item.color === 'emerald' ? 'bg-emerald-500' : item.color === 'blue' ? 'bg-blue-500' : item.color === 'cyan' ? 'bg-cyan-500' : item.color === 'rose' ? 'bg-rose-500' : 'bg-amber-500'} shadow-[0_0_6px]`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-slate-900 dark:text-white font-semibold leading-snug truncate">{item.action}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{item.details}</div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 font-mono">{item.time}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. CARD MAXIMIZE MODAL (Retains full deep-dive functionality) */}
+      {/* 5. UNIVERSAL ANALYTICS MAXIMIZE WORKSPACE (Supports all 17 card types) */}
       {/* ========================================================================= */}
-      {maximizedCard && (
-        <CardMaximizeModal
-          isOpen={true}
-          title={
-            maximizedCard === 'productivity_trend' ? 'Productivity Trend: Actual vs Predicted' :
-            maximizedCard === 'workforce_health' ? 'Workforce Health & Vitality Deep Dive' :
-            maximizedCard === 'risk_performance' ? 'Employee Risk vs Performance Matrix' :
-            'Enterprise Intelligence Deep Dive'
-          }
+      {Boolean(maximizedCard) && (
+        <AnalyticsMaximizeWorkspace
+          target={maximizedCard}
+          isOpen={Boolean(maximizedCard)}
           onClose={() => setMaximizedCard(null)}
-        >
-          <div className="p-6 text-slate-300">
-            <h3 className="text-lg font-bold text-white mb-2">High-Resolution Enterprise Telemetry</h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Deep analytical inspection for calibrated workforce telemetry across all 520 records.
-            </p>
-            <div className="h-80 w-full bg-[#090E1A] rounded-xl border border-slate-800 p-4 flex items-center justify-center text-slate-500 text-sm">
-              Telemetry expanded view active
-            </div>
-          </div>
-        </CardMaximizeModal>
+          dashboardData={data}
+          employees={filteredEmployees.length > 0 ? filteredEmployees : employees}
+          onSelectEmployee={(emp) => onViewEmployee(emp.employee_id)}
+        />
       )}
     </div>
   );
 };
-

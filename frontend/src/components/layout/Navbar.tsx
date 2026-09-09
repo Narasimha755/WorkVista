@@ -37,12 +37,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('01 Sep 2026 – 30 Sep 2026');
 
-  const isDark = true;
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+  });
 
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
-  }, []);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const ranges = [
     '01 Sep 2026 – 30 Sep 2026',
@@ -52,33 +62,33 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="px-5 py-2.5 bg-[#0B1120] border-b border-slate-800/80 sticky top-0 z-30 shadow-sm text-slate-200">
+    <header className="px-5 py-2.5 bg-white dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800/80 sticky top-0 z-30 shadow-2xs text-slate-800 dark:text-slate-200 transition-colors">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 max-w-[1720px] mx-auto">
         {/* Left: Global Command / Search Input */}
         <div className="flex-1 max-w-md">
           <div 
             onClick={onOpenSearch}
-            className="relative flex items-center bg-[#090E1A] border border-slate-800/80 hover:border-slate-700 rounded-xl px-3.5 py-1.5 cursor-pointer transition-colors group"
+            className="relative flex items-center bg-slate-100 dark:bg-[#090E1A] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl px-3.5 py-1.5 cursor-pointer transition-colors group"
           >
-            <Search className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 mr-2.5 shrink-0 transition-colors" />
+            <Search className="w-4 h-4 text-slate-400 group-hover:text-blue-500 dark:group-hover:text-cyan-400 mr-2.5 shrink-0 transition-colors" />
             <input
               type="text"
               readOnly
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Ask WorkVista anything... (Ctrl + K)"
-              className="w-full text-xs bg-transparent border-none outline-none text-slate-200 placeholder-slate-400 cursor-pointer"
+              className="w-full text-xs bg-transparent border-none outline-none text-slate-900 dark:text-slate-200 placeholder-slate-400 cursor-pointer"
             />
           </div>
         </div>
 
-        {/* Right Controls matching reference screenshot */}
+        {/* Right Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Date Range Selector */}
           <div className="relative">
             <button
               onClick={() => setDateRangeOpen(!dateRangeOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-300 bg-[#090E1A] border border-slate-800/80 hover:border-slate-700 rounded-xl shadow-xs transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-[#090E1A] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl shadow-2xs transition-colors"
             >
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{selectedRange}</span>
@@ -86,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {dateRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-56 bg-[#090E1A] border border-slate-800 rounded-xl shadow-xl z-40 py-1 animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-[#090E1A] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-40 py-1 animate-in fade-in zoom-in-95">
                 {ranges.map(r => (
                   <button
                     key={r}
@@ -95,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setDateRangeOpen(false);
                     }}
                     className={`w-full text-left px-3.5 py-2 text-xs transition-colors ${
-                      selectedRange === r ? 'bg-blue-900/40 text-cyan-300 font-semibold' : 'text-slate-300 hover:bg-slate-800/60'
+                      selectedRange === r ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-cyan-300 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     {r}
@@ -108,34 +118,39 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Dataset Badge: Enterprise Dataset · 520 employees */}
           <div 
             onClick={onLoadDemo}
-            className="flex items-center gap-2 px-3 py-1 bg-[#090E1A] border border-slate-800/80 hover:border-slate-700 rounded-xl text-xs cursor-pointer transition-colors"
+            className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-[#090E1A] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl text-xs cursor-pointer transition-colors"
             title="Active calibrated dataset: 520 employees (Click to refresh baseline)"
           >
-            <div className="w-5 h-5 rounded-md bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <ShieldCheck className="w-3 h-3" />
             </div>
             <div className="leading-tight text-left">
-              <div className="text-[11px] font-semibold text-slate-200">Enterprise Dataset</div>
-              <div className="text-[9px] text-slate-400">520 employees</div>
+              <div className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">Enterprise Dataset</div>
+              <div className="text-[9px] text-slate-500 dark:text-slate-400">520 employees</div>
             </div>
           </div>
 
           {/* Model Status Pill: Online */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#090E1A] border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-semibold shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-[#090E1A] border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-semibold shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>Online</span>
           </div>
 
-          {/* Notifications Center with badge "3" */}
+          {/* Notifications Center with badge */}
           <NotificationDropdown onNavigateToTab={onNavigateToTab} />
 
-          {/* Theme Icon (Moon) */}
-          <div 
-            className="p-1.5 text-slate-300 bg-[#090E1A] rounded-xl border border-slate-800/80 hover:border-slate-700 transition-colors"
-            title="Dark Modern Interface"
+          {/* Theme Switcher Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-[#090E1A] rounded-xl border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
           >
-            <Moon className="w-4 h-4 text-slate-300" />
-          </div>
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-600" />
+            )}
+          </button>
 
           {/* Circular User Avatar "N" */}
           <div 

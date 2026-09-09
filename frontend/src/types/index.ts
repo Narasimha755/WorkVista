@@ -265,6 +265,8 @@ export interface DepartmentSummary {
   productivity_gap: number;
 }
 
+export type Department = DepartmentSummary;
+
 export interface ModelPerformanceData {
   has_model: boolean;
   message?: string;
@@ -456,3 +458,133 @@ export interface EmployeeDigitalTwinData {
   pressure_signals: PressureSignal[];
   explainability_waterfall: ExplainabilityFactor[];
 }
+
+export type CandidateStage = 
+  | 'New' 
+  | 'Screening' 
+  | 'Shortlisted' 
+  | 'Interview' 
+  | 'Offer' 
+  | 'Hired' 
+  | 'Rejected' 
+  | 'On Hold';
+
+export interface CandidateMatchBreakdown {
+  skills_match_pct: number;
+  experience_match_pct: number;
+  education_match_pct: number;
+  role_match_pct: number;
+  location_match_pct: number;
+  overall_match_pct: number;
+  matched_skills: string[];
+  missing_skills: string[];
+}
+
+export interface Candidate {
+  id: number;
+  candidate_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  role_id?: number | null;
+  role_title: string;
+  department: string;
+  experience: number;
+  skills: string[];
+  education: string;
+  expected_salary: number;
+  availability: string;
+  notice_period: string;
+  source: string;
+  resume_url?: string | null;
+  resume_text?: string;
+  portfolio_url?: string;
+  linkedin_url?: string;
+  status: CandidateStage;
+  match_score: number;
+  match_breakdown?: CandidateMatchBreakdown;
+  converted_employee_id?: string | null;
+  notes?: Array<{ id: number; content: string; author: string; created_at: string }>;
+  tasks?: Array<{ id: number; title: string; task_type: string; due_date: string; priority: string; status: string }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobRole {
+  id: number;
+  title: string;
+  department: string;
+  location: string;
+  required_skills: string[];
+  preferred_skills: string[];
+  min_experience: number;
+  max_experience: number;
+  education: string;
+  min_salary: number;
+  max_salary: number;
+  employment_type: string;
+  description: string;
+  status: 'Active' | 'Archived' | 'Draft' | string;
+  candidate_count?: number;
+  created_at: string;
+}
+
+export interface InterviewItem {
+  id: number;
+  candidate_id: string;
+  candidate_name: string;
+  role_id?: number | null;
+  role_title: string;
+  interviewer: string;
+  scheduled_time: string;
+  interview_type: string;
+  status: 'Scheduled' | 'Completed' | 'Cancelled' | string;
+  feedback?: string;
+  rating?: number;
+  notes?: string;
+  created_at: string;
+}
+
+export type MaximizeTargetType = 
+  | 'total_employees'
+  | 'avg_productivity'
+  | 'high_performers'
+  | 'at_risk'
+  | 'predicted_improvement'
+  | 'predicted_decline'
+  | 'productivity_trend'
+  | 'workforce_health'
+  | 'productivity_distribution'
+  | 'department_performance'
+  | 'risk_matrix'
+  | 'key_insights'
+  | 'recommended_actions'
+  | 'employee_predictions'
+  | 'recent_activity'
+  | 'data_quality'
+  | 'model_performance'
+  | null;
+
+export interface GlobalFilterState {
+  department: string;
+  role: string;
+  performance_status: string;
+  risk_level: string;
+  experience_cohort: string;
+  date_range: string;
+  search: string;
+}
+
+export interface DatasetVersionItem {
+  id: number;
+  dataset_id?: number;
+  version_tag: string;
+  dataset_name: string;
+  record_count: number;
+  column_count: number;
+  quality_score: number;
+  is_active: boolean;
+  created_at: string;
+}
+

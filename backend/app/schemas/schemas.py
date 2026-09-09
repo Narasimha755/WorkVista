@@ -343,3 +343,246 @@ class AuditLogItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ==================== ROLES & RECRUITMENT ====================
+class JobRoleCreate(BaseModel):
+    title: str
+    department: str
+    location: Optional[str] = "Remote"
+    required_skills: Optional[List[str]] = []
+    preferred_skills: Optional[List[str]] = []
+    min_experience: Optional[float] = 1.0
+    max_experience: Optional[float] = 10.0
+    education: Optional[str] = "Bachelor's Degree"
+    min_salary: Optional[float] = 60000.0
+    max_salary: Optional[float] = 120000.0
+    employment_type: Optional[str] = "Full-Time"
+    description: Optional[str] = ""
+    status: Optional[str] = "Active"
+
+class JobRoleUpdate(BaseModel):
+    title: Optional[str] = None
+    department: Optional[str] = None
+    location: Optional[str] = None
+    required_skills: Optional[List[str]] = None
+    preferred_skills: Optional[List[str]] = None
+    min_experience: Optional[float] = None
+    max_experience: Optional[float] = None
+    education: Optional[str] = None
+    min_salary: Optional[float] = None
+    max_salary: Optional[float] = None
+    employment_type: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+
+class JobRoleResponse(BaseModel):
+    id: int
+    title: str
+    department: str
+    location: str
+    required_skills: List[str]
+    preferred_skills: List[str]
+    min_experience: float
+    max_experience: float
+    education: str
+    min_salary: float
+    max_salary: float
+    employment_type: str
+    description: str
+    status: str
+    candidate_count: Optional[int] = 0
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ==================== CANDIDATES ====================
+class CandidateCreate(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = ""
+    location: Optional[str] = "Remote"
+    role_id: Optional[int] = None
+    role_title: Optional[str] = "Software Engineer"
+    department: Optional[str] = "Engineering"
+    experience: Optional[float] = 2.0
+    skills: Optional[List[str]] = []
+    education: Optional[str] = "Bachelor's Degree"
+    expected_salary: Optional[float] = 90000.0
+    availability: Optional[str] = "Immediate"
+    notice_period: Optional[str] = "30 days"
+    source: Optional[str] = "Direct"
+    resume_url: Optional[str] = None
+    resume_text: Optional[str] = ""
+    portfolio_url: Optional[str] = ""
+    linkedin_url: Optional[str] = ""
+    status: Optional[str] = "New"
+
+class CandidateUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    role_id: Optional[int] = None
+    role_title: Optional[str] = None
+    department: Optional[str] = None
+    experience: Optional[float] = None
+    skills: Optional[List[str]] = None
+    education: Optional[str] = None
+    expected_salary: Optional[float] = None
+    availability: Optional[str] = None
+    notice_period: Optional[str] = None
+    source: Optional[str] = None
+    resume_text: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    status: Optional[str] = None
+
+class CandidateStageUpdate(BaseModel):
+    status: str  # New, Screening, Shortlisted, Interview, Offer, Hired, Rejected, On Hold
+    notes: Optional[str] = ""
+
+class CandidateMatchBreakdown(BaseModel):
+    skills_match_pct: float
+    experience_match_pct: float
+    education_match_pct: float
+    role_match_pct: float
+    location_match_pct: float
+    overall_match_pct: float
+    matched_skills: List[str] = []
+    missing_skills: List[str] = []
+
+class CandidateResponse(BaseModel):
+    id: int
+    candidate_id: str
+    name: str
+    email: str
+    phone: str
+    location: str
+    role_id: Optional[int] = None
+    role_title: str
+    department: str
+    experience: float
+    skills: List[str]
+    education: str
+    expected_salary: float
+    availability: str
+    notice_period: str
+    source: str
+    resume_url: Optional[str] = None
+    resume_text: Optional[str] = ""
+    portfolio_url: Optional[str] = ""
+    linkedin_url: Optional[str] = ""
+    status: str
+    match_score: float
+    match_breakdown: Optional[Dict[str, Any]] = None
+    converted_employee_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ConvertCandidateRequest(BaseModel):
+    starting_salary: Optional[float] = None
+    start_date: Optional[str] = None
+    assigned_role: Optional[str] = None
+    assigned_department: Optional[str] = None
+
+# ==================== INTERVIEWS ====================
+class InterviewCreate(BaseModel):
+    candidate_id: str
+    role_id: Optional[int] = None
+    role_title: Optional[str] = ""
+    interviewer: Optional[str] = "NARASIMHA"
+    scheduled_time: str
+    interview_type: Optional[str] = "Technical"
+    notes: Optional[str] = ""
+
+class InterviewUpdate(BaseModel):
+    status: Optional[str] = None  # Scheduled, Completed, Cancelled
+    feedback: Optional[str] = None
+    rating: Optional[float] = None
+    notes: Optional[str] = None
+
+class InterviewResponse(BaseModel):
+    id: int
+    candidate_id: str
+    candidate_name: str
+    role_id: Optional[int] = None
+    role_title: str
+    interviewer: str
+    scheduled_time: str
+    interview_type: str
+    status: str
+    feedback: str
+    rating: float
+    notes: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ==================== UNIVERSAL TASKS & NOTES ====================
+class UniversalTaskCreate(BaseModel):
+    entity_type: str = "employee"
+    entity_id: str
+    title: str
+    task_type: Optional[str] = "General"
+    due_date: Optional[str] = ""
+    priority: Optional[str] = "Medium"
+    assigned_to: Optional[str] = "NARASIMHA"
+
+class UniversalTaskUpdate(BaseModel):
+    title: Optional[str] = None
+    task_type: Optional[str] = None
+    due_date: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+
+class UniversalTaskResponse(BaseModel):
+    id: int
+    entity_type: str
+    entity_id: str
+    title: str
+    task_type: str
+    due_date: str
+    priority: str
+    status: str
+    assigned_to: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class UniversalNoteCreate(BaseModel):
+    entity_type: str = "employee"
+    entity_id: str
+    content: str
+    author: Optional[str] = "NARASIMHA"
+
+class UniversalNoteResponse(BaseModel):
+    id: int
+    entity_type: str
+    entity_id: str
+    content: str
+    author: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class DatasetVersionResponse(BaseModel):
+    id: int
+    dataset_id: Optional[int] = None
+    version_tag: str
+    dataset_name: str
+    record_count: int
+    column_count: int
+    quality_score: float
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+

@@ -72,10 +72,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   const validateAndSetFile = (selectedFile: File) => {
     setErrorMsg(null);
-    const validExtensions = ['.csv', '.xlsx', '.xls'];
+    const validExtensions = ['.csv', '.xlsx', '.xls', '.json', '.txt'];
     const hasValidExt = validExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext));
     if (!hasValidExt) {
-      setErrorMsg('Invalid file format. Please choose a valid .csv, .xlsx, or .xls employee spreadsheet.');
+      setErrorMsg('Invalid file format. Please choose a valid .csv, .xlsx, .xls, .json, or .txt employee dataset.');
       return;
     }
     setFile(selectedFile);
@@ -203,7 +203,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv,.xlsx,.xls,.json,.txt"
                   onChange={handleChange}
                   className="hidden"
                 />
@@ -228,7 +228,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                       Drag and drop your employee dataset here, or <span className="text-blue-600 font-bold">browse</span>
                     </p>
                     <p className="text-xs text-slate-400">
-                      Accepted: CSV, XLSX, XLS (up to 25MB)
+                      Accepted: CSV, XLSX, XLS, JSON, TXT (up to 25MB)
                     </p>
                   </div>
                 )}

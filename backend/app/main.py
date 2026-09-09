@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 
+import app.models
 from app.core.config import settings
 from app.core.database import Base, engine, ensure_schema
 from app.api.routes import (
@@ -17,7 +18,10 @@ from app.api.routes import (
     settings as app_settings,
     export,
     copilot,
-    scenario
+    scenario,
+    candidates,
+    roles,
+    interviews
 )
 
 Base.metadata.create_all(bind=engine)
@@ -34,7 +38,7 @@ def startup_event():
     from app.core.database import SessionLocal
     from app.models import Employee
     from app.core.config import UPLOADS_DIR
-    from app.services.demo_generator import generate_demo_dataset
+    from app.services.demo_generator import generate_demo_dataset, seed_recruitment_data
     from app.services.pipeline_orchestrator import process_and_persist_dataset
 
     db = SessionLocal()
@@ -53,6 +57,9 @@ def startup_event():
                 db=db
             )
             print("Database ready with 520 employees and active ML predictions.")
+
+        # Seed recruitment roles and candidates
+        seed_recruitment_data(db)
     except Exception as e:
         print(f"Startup initialization notice: {e}")
     finally:
@@ -80,6 +87,9 @@ app.include_router(app_settings.router, prefix="/api", tags=["Settings & Audit"]
 app.include_router(export.router, prefix="/api", tags=["Export"])
 app.include_router(copilot.router, prefix="/api", tags=["AI Copilot"])
 app.include_router(scenario.router, prefix="/api", tags=["Scenario Planner"])
+app.include_router(candidates.router, prefix="/api", tags=["Candidates & Recruitment"])
+app.include_router(roles.router, prefix="/api", tags=["Job Roles"])
+app.include_router(interviews.router, prefix="/api", tags=["Interviews"])
 
 @app.get("/api/health")
 def health_check():

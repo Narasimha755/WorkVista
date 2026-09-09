@@ -27,7 +27,7 @@ def list_employees(
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
     page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=100),
+    page_size: int = Query(10, ge=1, le=2000),
     sort_by: str = "id",
     sort_dir: str = "asc",
     db: Session = Depends(get_db)

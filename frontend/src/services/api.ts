@@ -12,7 +12,11 @@ import {
   DatasetItem,
   CopilotQueryResponse,
   ScenarioSimulationResult,
-  EmployeeDigitalTwinData
+  EmployeeDigitalTwinData,
+  Candidate,
+  JobRole,
+  InterviewItem,
+  CandidateStage
 } from '../types';
 import mockData from './mockData.json';
 import { dynamicStore, downloadFile } from './dynamicStore';
@@ -488,5 +492,228 @@ export const api = {
         body: JSON.stringify(params)
       },
       () => dynamicStore.simulateEmployeeIntervention(employeeId, params)
+    ),
+
+  getCandidates: (params?: {
+    page?: number;
+    page_size?: number;
+    status?: string;
+    department?: string;
+    role_id?: number;
+    search?: string;
+    min_match?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.page_size) query.append('page_size', params.page_size.toString());
+    if (params?.status && params.status !== 'All') query.append('status', params.status);
+    if (params?.department && params.department !== 'All' && params.department !== 'All Departments') query.append('department', params.department);
+    if (params?.role_id) query.append('role_id', params.role_id.toString());
+    if (params?.search) query.append('search', params.search);
+    if (params?.min_match) query.append('min_match', params.min_match.toString());
+
+    return fetchJson<{ total: number; page: number; page_size: number; total_pages: number; items: Candidate[] }>(
+      API_BASE + '/candidates?' + query.toString(),
+      undefined,
+      () => dynamicStore.getCandidates(params)
+    );
+  },
+
+  getCandidate: (id: string) =>
+    fetchJson<Candidate>(
+      API_BASE + '/candidates/' + id,
+      undefined,
+      () => dynamicStore.getCandidate(id) as Candidate
+    ),
+
+  createCandidate: (payload: any) =>
+    fetchJson<{ success: boolean; candidate_id: string; match_score: number; message: string }>(
+      API_BASE + '/candidates',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      () => {
+        const res = dynamicStore.createCandidate(payload);
+        return { ...res, message: 'Candidate created successfully' };
+      }
+    ),
+
+  updateCandidateStage: (id: string, status: CandidateStage, notes?: string) =>
+    fetchJson<{ success: boolean; candidate_id: string; new_status: string; message: string }>(
+      API_BASE + '/candidates/' + id + '/stage',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes })
+      },
+      () => {
+        const res = dynamicStore.updateCandidateStage(id, status, notes);
+        return { ...res, message: 'Candidate stage updated successfully' };
+      }
+    ),
+
+  convertCandidateToEmployee: (id: string, payload?: any) =>
+    fetchJson<{ success: boolean; employee_id: string; message: string }>(
+      API_BASE + '/candidates/' + id + '/convert-to-employee',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      },
+      () => {
+        const res = dynamicStore.convertCandidateToEmployee(id, payload);
+        return { ...res, message: 'Candidate converted to employee successfully' };
+      }
+    ),
+
+  uploadCandidateResume: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetchJson<{ success: boolean; filename: string; parsed_data: any }>(
+      API_BASE + '/candidates/upload-resume',
+      { method: 'POST', body: formData },
+      async () => {
+        return {
+          success: true,
+          filename: file.name,
+          parsed_data: {
+            name: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+            email: 'candidate@example.com',
+            phone: '(555) 012-3456',
+            role: 'Software Engineer',
+            experience: 3.5,
+            education: "Bachelor's Degree",
+            skills: ['React', 'TypeScript', 'FastAPI', 'SQL', 'Docker'],
+            resume_text: 'Parsed resume text preview.'
+          }
+        };
+      }
+    );
+  },
+
+  deleteCandidate: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(
+      API_BASE + '/candidates/' + id,
+      { method: 'DELETE' },
+      () => {
+        dynamicStore.candidates = dynamicStore.candidates.filter(c => c.candidate_id !== id);
+        return { success: true, message: 'Candidate deleted' };
+      }
+    ),
+
+  getCandidateNotes: (id: string) =>
+    fetchJson<any[]>(
+      API_BASE + '/candidates/' + id + '/notes',
+      undefined,
+      () => (dynamicStore.getCandidate(id)?.notes || [])
+    ),
+
+  addCandidateNote: (id: string, content: string) =>
+    fetchJson<any>(
+      API_BASE + '/candidates/' + id + '/notes',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      },
+      () => {
+        const c = dynamicStore.getCandidate(id);
+        const note = { id: Date.now(), content, author: 'NARASIMHA', created_at: new Date().toISOString() };
+        if (c) {
+          if (!c.notes) c.notes = [];
+          c.notes.unshift(note);
+        }
+        return note;
+      }
+    ),
+
+  getJobRoles: (params?: { status?: string; department?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.status && params.status !== 'All') query.append('status', params.status);
+    if (params?.department && params.department !== 'All') query.append('department', params.department);
+    return fetchJson<JobRole[]>(
+      API_BASE + '/roles?' + query.toString(),
+      undefined,
+      () => dynamicStore.getJobRoles(params)
+    );
+  },
+
+  createJobRole: (payload: any) =>
+    fetchJson<{ success: boolean; id: number; title: string; message: string }>(
+      API_BASE + '/roles',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      () => {
+        const res = dynamicStore.createJobRole(payload);
+        return { ...res, title: payload.title || '', message: 'Job role created successfully' };
+      }
+    ),
+
+  updateJobRole: (id: number, payload: any) =>
+    fetchJson<{ success: boolean; message: string }>(
+      API_BASE + '/roles/' + id,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      () => {
+        dynamicStore.updateJobRole(id, payload);
+        return { success: true, message: 'Job role updated successfully' };
+      }
+    ),
+
+  deleteJobRole: (id: number) =>
+    fetchJson<{ success: boolean; message: string }>(
+      API_BASE + '/roles/' + id,
+      { method: 'DELETE' },
+      () => {
+        dynamicStore.roles = dynamicStore.roles.filter(r => r.id !== id);
+        return { success: true, message: 'Role deleted' };
+      }
+    ),
+
+  getInterviews: (params?: { candidate_id?: string; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.candidate_id) query.append('candidate_id', params.candidate_id);
+    if (params?.status && params.status !== 'All') query.append('status', params.status);
+    return fetchJson<InterviewItem[]>(
+      API_BASE + '/interviews?' + query.toString(),
+      undefined,
+      () => dynamicStore.getInterviews(params)
+    );
+  },
+
+  scheduleInterview: (payload: any) =>
+    fetchJson<{ success: boolean; interview_id: number; message: string }>(
+      API_BASE + '/interviews',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      () => {
+        const res = dynamicStore.scheduleInterview(payload);
+        return { ...res, message: 'Interview scheduled successfully' };
+      }
+    ),
+
+  updateInterview: (id: number, payload: any) =>
+    fetchJson<{ success: boolean; message: string }>(
+      API_BASE + '/interviews/' + id,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      () => {
+        dynamicStore.updateInterview(id, payload);
+        return { success: true, message: 'Interview updated successfully' };
+      }
     )
 };

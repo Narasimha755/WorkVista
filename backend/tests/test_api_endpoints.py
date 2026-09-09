@@ -200,3 +200,20 @@ def test_settings_validation_and_audit():
     assert len(logs) > 0
     assert any(log["user"] == "NARASIMHA" for log in logs)
 
+def test_dataset_versions_and_rollback():
+    # 1. Fetch versions
+    res = client.get("/api/versions")
+    assert res.status_code == 200
+    versions = res.json()
+    assert len(versions) >= 1
+    assert "version_tag" in versions[0]
+    
+    # 2. Rollback to version
+    v_id = versions[0]["id"]
+    rb_res = client.post(f"/api/versions/{v_id}/rollback")
+    assert rb_res.status_code == 200
+    rb_data = rb_res.json()
+    assert rb_data["success"] is True
+    assert rb_data["version"]["is_active"] is True
+
+

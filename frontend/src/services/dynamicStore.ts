@@ -12,7 +12,11 @@ import {
   DataQualityReport,
   CopilotQueryResponse,
   ScenarioSimulationResult,
-  EmployeeDigitalTwinData
+  EmployeeDigitalTwinData,
+  Candidate,
+  JobRole,
+  InterviewItem,
+  CandidateStage
 } from '../types';
 
 export function downloadFile(filename: string, content: string, mimeType: string) {
@@ -46,6 +50,9 @@ class DynamicStore {
   public tasks: Record<string, any[]> = {};
   public reports: ReportItem[] = [];
   public auditLogs: AuditLogItem[] = [];
+  public candidates: Candidate[] = [];
+  public roles: JobRole[] = [];
+  public interviews: InterviewItem[] = [];
   public activeModel = 'RandomForest';
   public r2Score = 0.748;
   public maeScore = 6.12;
@@ -1311,6 +1318,179 @@ class DynamicStore {
       risk_delta: Number((simR - baseR).toFixed(1)),
       simulated_status: simP >= 80 ? 'High' : simP >= 50 ? 'Medium' : 'At Risk'
     };
+  }
+
+  public getCandidates(params?: { status?: string; department?: string; role_id?: number; search?: string; min_match?: number; page?: number; page_size?: number }) {
+    let items = [...this.candidates];
+    if (params?.status && params.status !== 'All') {
+      items = items.filter(c => c.status === params.status);
+    }
+    if (params?.department && params.department !== 'All' && params.department !== 'All Departments') {
+      items = items.filter(c => c.department === params.department);
+    }
+    if (params?.role_id) {
+      items = items.filter(c => c.role_id === params.role_id);
+    }
+    if (params?.search) {
+      const q = params.search.toLowerCase();
+      items = items.filter(c => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.role_title.toLowerCase().includes(q));
+    }
+    if (params?.min_match) {
+      items = items.filter(c => c.match_score >= params.min_match!);
+    }
+    const total = items.length;
+    const page = params?.page || 1;
+    const pageSize = params?.page_size || 20;
+    const paged = items.slice((page - 1) * pageSize, page * pageSize);
+    return {
+      total,
+      page,
+      page_size: pageSize,
+      total_pages: Math.ceil(total / pageSize) || 1,
+      items: paged
+    };
+  }
+
+  public getCandidate(id: string) {
+    return this.candidates.find(c => c.candidate_id === id);
+  }
+
+  public createCandidate(payload: any) {
+    const newId = `CAN-${this.candidates.length + 101}`;
+    const newCand: Candidate = {
+      id: Date.now(),
+      candidate_id: newId,
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone || '',
+      location: payload.location || 'Remote',
+      role_id: payload.role_id,
+      role_title: payload.role_title || 'Software Engineer',
+      department: payload.department || 'Engineering',
+      experience: payload.experience || 2.0,
+      skills: payload.skills || [],
+      education: payload.education || "Bachelor's Degree",
+      expected_salary: payload.expected_salary || 90000,
+      availability: payload.availability || 'Immediate',
+      notice_period: payload.notice_period || '30 days',
+      source: payload.source || 'Direct',
+      status: payload.status || 'New',
+      match_score: payload.match_score || 82.5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    this.candidates.unshift(newCand);
+    return { success: true, candidate_id: newId, match_score: newCand.match_score };
+  }
+
+  public updateCandidateStage(candidateId: string, status: CandidateStage, notes?: string) {
+    const c = this.candidates.find(item => item.candidate_id === candidateId);
+    if (c) {
+      c.status = status;
+      c.updated_at = new Date().toISOString();
+      if (notes) {
+        if (!c.notes) c.notes = [];
+        c.notes.unshift({ id: Date.now(), content: `Stage moved to ${status}: ${notes}`, author: 'NARASIMHA', created_at: new Date().toISOString() });
+      }
+    }
+    return { success: true, candidate_id: candidateId, new_status: status };
+  }
+
+  public convertCandidateToEmployee(candidateId: string, payload?: any) {
+    const c = this.candidates.find(item => item.candidate_id === candidateId);
+    if (!c) throw new Error('Candidate not found');
+    const newEmpId = `EMP-${this.employees.length + 1}`;
+    const newEmp: Employee = {
+      id: Date.now(),
+      employee_id: newEmpId,
+      employee_name: c.name,
+      full_name: c.name,
+      department: payload?.assigned_department || c.department,
+      role: payload?.assigned_role || c.role_title,
+      experience: c.experience,
+      attendance: 96,
+      workload: 65,
+      working_hours: 40,
+      engagement: 85,
+      skill_level: Math.round(c.match_score),
+      projects: 1,
+      tasks_completed: 5,
+      deadline_adherence: 92,
+      previous_productivity: 76,
+      productivity_score: 78,
+      performance_rating: c.match_score >= 85 ? 'High' : 'Medium',
+      created_at: new Date().toISOString()
+    };
+    this.employees.unshift(newEmp);
+    c.status = 'Hired';
+    c.converted_employee_id = newEmpId;
+    return { success: true, employee_id: newEmpId };
+  }
+
+  public getJobRoles(params?: { status?: string; department?: string }) {
+    let list = [...this.roles];
+    if (params?.status && params.status !== 'All') list = list.filter(r => r.status === params.status);
+    if (params?.department && params.department !== 'All') list = list.filter(r => r.department === params.department);
+    return list;
+  }
+
+  public createJobRole(payload: any) {
+    const role: JobRole = {
+      id: Date.now(),
+      title: payload.title,
+      department: payload.department,
+      location: payload.location || 'Remote',
+      required_skills: payload.required_skills || [],
+      preferred_skills: payload.preferred_skills || [],
+      min_experience: payload.min_experience || 1.0,
+      max_experience: payload.max_experience || 8.0,
+      education: payload.education || "Bachelor's Degree",
+      min_salary: payload.min_salary || 70000,
+      max_salary: payload.max_salary || 130000,
+      employment_type: payload.employment_type || 'Full-Time',
+      description: payload.description || '',
+      status: payload.status || 'Active',
+      candidate_count: 0,
+      created_at: new Date().toISOString()
+    };
+    this.roles.unshift(role);
+    return { success: true, id: role.id };
+  }
+
+  public updateJobRole(id: number, payload: any) {
+    const r = this.roles.find(item => item.id === id);
+    if (r) Object.assign(r, payload);
+    return { success: true };
+  }
+
+  public getInterviews(params?: { candidate_id?: string; status?: string }) {
+    let items = [...this.interviews];
+    if (params?.candidate_id) items = items.filter(i => i.candidate_id === params.candidate_id);
+    if (params?.status && params.status !== 'All') items = items.filter(i => i.status === params.status);
+    return items;
+  }
+
+  public scheduleInterview(payload: any) {
+    const inter: InterviewItem = {
+      id: Date.now(),
+      candidate_id: payload.candidate_id,
+      candidate_name: payload.candidate_name || 'Candidate',
+      role_title: payload.role_title || '',
+      interviewer: payload.interviewer || 'NARASIMHA',
+      scheduled_time: payload.scheduled_time,
+      interview_type: payload.interview_type || 'Technical',
+      status: 'Scheduled',
+      notes: payload.notes || '',
+      created_at: new Date().toISOString()
+    };
+    this.interviews.unshift(inter);
+    return { success: true, interview_id: inter.id };
+  }
+
+  public updateInterview(id: number, payload: any) {
+    const inter = this.interviews.find(i => i.id === id);
+    if (inter) Object.assign(inter, payload);
+    return { success: true };
   }
 }
 

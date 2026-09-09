@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar, NavTab } from './components/layout/Sidebar';
 import { Navbar } from './components/layout/Navbar';
 import { Dashboard } from './pages/Dashboard';
+import { Workforce } from './pages/Workforce';
+import { Candidates } from './pages/Candidates';
 import { EmployeesPage } from './pages/Employees';
 import { PredictionsPage } from './pages/Predictions';
 import { AnalyticsPage } from './pages/Analytics';
@@ -112,7 +114,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#060913] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-300 antialiased overflow-x-hidden">
+    <div className="flex min-h-screen bg-slate-100 dark:bg-[#060913] text-slate-900 dark:text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-300 antialiased overflow-x-hidden">
       {/* Persistent Left Cyber Dock matching reference */}
       <Sidebar 
         currentTab={currentTab} 
@@ -121,7 +123,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#0B1120]">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-[#0B1120]">
         {/* Top Command Bar matching reference */}
         <Navbar
           onOpenUpload={() => setIsUploadOpen(true)}
@@ -160,6 +162,17 @@ export const App: React.FC = () => {
               onOpenScenarioPlanner={handleOpenScenarioPlannerWithDept}
               onOpenCompare={() => setIsCompareOpen(true)}
             />
+          )}
+
+          {currentTab === 'workforce' && (
+            <Workforce
+              onViewEmployee={(id) => setSelectedEmployeeId(id)}
+              globalSearch={searchQuery}
+            />
+          )}
+
+          {currentTab === 'candidates' && (
+            <Candidates />
           )}
 
           {currentTab === 'employees' && (
