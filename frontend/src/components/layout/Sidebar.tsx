@@ -2,28 +2,25 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   Users, 
-  Sparkles, 
-  BarChart3, 
   Building2, 
+  Sparkles, 
   ShieldAlert, 
+  BarChart2, 
   FileText, 
-  Gauge, 
   Database, 
-  Activity as ActivityIcon, 
-  Settings, 
-  MessageSquare,
-  Hexagon
+  BrainCircuit, 
+  Settings 
 } from 'lucide-react';
 
 export type NavTab = 
   | 'dashboard' 
   | 'employees' 
-  | 'predictions' 
-  | 'analytics' 
   | 'departments' 
+  | 'predictions' 
   | 'risk-intelligence' 
+  | 'analytics' 
   | 'reports' 
-  | 'model-performance' 
+  | 'model-performance'
   | 'data-studio' 
   | 'activity' 
   | 'settings';
@@ -36,115 +33,116 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, onOpenCopilot }) => {
   const navItems = [
-    { id: 'dashboard' as NavTab, label: 'Command Center', icon: LayoutDashboard },
-    { id: 'risk-intelligence' as NavTab, label: 'Multivariate Risk Topology', icon: ShieldAlert },
-    { id: 'employees' as NavTab, label: 'Workforce 360° Matrix', icon: Users },
-    { id: 'analytics' as NavTab, label: 'Strategic Analytics', icon: BarChart3 },
-    { id: 'departments' as NavTab, label: 'Departmental Breakdown', icon: Building2 },
-    { id: 'predictions' as NavTab, label: 'Predictive Intelligence', icon: Sparkles },
-    { id: 'reports' as NavTab, label: 'Executive Intelligence Reports', icon: FileText },
-    { id: 'model-performance' as NavTab, label: 'Neural Drift & Models', icon: Gauge },
-    { id: 'data-studio' as NavTab, label: 'Data Studio & Ingestion', icon: Database },
-    { id: 'activity' as NavTab, label: 'Enterprise Audit Trail', icon: ActivityIcon },
+    { id: 'dashboard' as NavTab, label: 'Overview', icon: LayoutDashboard },
+    { id: 'employees' as NavTab, label: 'Employees', icon: Users },
+    { id: 'departments' as NavTab, label: 'Departments', icon: Building2 },
+    { id: 'predictions' as NavTab, label: 'Predictions', icon: Sparkles },
+    { id: 'risk-intelligence' as NavTab, label: 'Risk', icon: ShieldAlert },
+    { id: 'analytics' as NavTab, label: 'Analytics', icon: BarChart2 },
+    { id: 'reports' as NavTab, label: 'Reports', icon: FileText },
+    { id: 'data-studio' as NavTab, label: 'Data Studio', icon: Database },
   ];
 
   return (
-    <aside className="w-16 bg-[#050811] text-slate-400 flex flex-col justify-between shrink-0 min-h-screen border-r border-cyan-500/15 z-40 select-none py-3.5 items-center">
-      {/* Top Logo / Hexagon Icon */}
-      <div className="flex flex-col items-center gap-4">
-        <button
-          onClick={() => onSelectTab('dashboard')}
-          className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-400/50 hover:scale-105 transition-all group relative"
-          title="WorkVista Cognition Command"
-        >
-          <Hexagon className="w-5 h-5 text-cyan-200 animate-pulse" />
-          <span className="absolute left-16 px-2.5 py-1 bg-[#0A1020] border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-50">
-            WorkVista Cognition
-          </span>
-        </button>
+    <aside className="w-[215px] bg-[#090E1A] text-slate-300 flex flex-col justify-between shrink-0 min-h-screen border-r border-slate-800/80 select-none z-30 font-sans">
+      <div>
+        {/* Brand Header */}
+        <div className="p-4 pb-5">
+          <div className="flex items-center gap-2.5">
+            {/* Modern "W" Icon Logo matching reference */}
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0">
+              <svg 
+                className="w-5 h-5 text-white" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M3 6l4.5 12 4-9 4 9 5.5-12" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-base font-bold tracking-tight text-white leading-none">
+                WorkVista
+              </h1>
+              <p className="text-[9px] tracking-tight text-slate-400 font-medium mt-1 truncate">
+                AI-Powered Workforce Intelligence
+              </p>
+            </div>
+          </div>
+        </div>
 
-        {/* Primary Nav Stack */}
-        <nav className="flex flex-col items-center gap-1.5 mt-2">
+        {/* Navigation Items */}
+        <nav className="px-2.5 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
             return (
-              <div key={item.id} className="relative group">
-                <button
-                  onClick={() => onSelectTab(item.id)}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 relative ${
-                    isActive
-                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,240,255,0.35)]'
-                      : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-900/80 hover:border hover:border-cyan-500/20'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 transition-transform duration-200 ${isActive ? 'scale-110 text-cyan-300' : ''}`} />
-                  {isActive && (
-                    <span className="absolute left-0 top-2 bottom-2 w-1 bg-cyan-400 rounded-r-full shadow-[0_0_8px_#00f0ff]" />
-                  )}
-                </button>
-
-                {/* Floating Tooltip */}
-                <span className="absolute left-14 top-1.5 px-2.5 py-1 bg-[#0C1224] border border-cyan-500/30 text-slate-200 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
-                  {item.label}
-                </span>
-              </div>
+              <button
+                key={item.id}
+                onClick={() => onSelectTab(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 relative ${
+                  isActive
+                    ? 'bg-[#13233D] text-white font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                {/* Slim cyan vertical highlight for active item */}
+                {isActive && (
+                  <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-cyan-400 rounded-r-full shadow-[0_0_8px_#00e5ff]" />
+                )}
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <span className="truncate">{item.label}</span>
+              </button>
             );
           })}
+
+          {/* AI Copilot Nav Button */}
+          <button
+            onClick={() => {
+              if (onOpenCopilot) onOpenCopilot();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-cyan-300 hover:bg-slate-800/40 transition-all duration-150 group"
+          >
+            <BrainCircuit className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+            <span className="truncate">AI Copilot</span>
+          </button>
         </nav>
       </div>
 
-      {/* Bottom Actions: Copilot Launcher, Settings & User Avatar */}
-      <div className="flex flex-col items-center gap-2 pt-2 border-t border-cyan-500/10 w-full px-2">
-        {/* WorkVista AI Copilot Button with Pulsing Red Notification Dot */}
-        {onOpenCopilot && (
-          <div className="relative group">
-            <button
-              onClick={onOpenCopilot}
-              className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-950/40 to-indigo-950/40 border border-pink-500/30 text-pink-300 hover:text-pink-200 hover:border-pink-400 hover:shadow-[0_0_15px_rgba(244,63,94,0.35)] flex items-center justify-center transition-all relative"
-              title="Open WorkVista AI Copilot"
-            >
-              <MessageSquare className="w-4 h-4 text-pink-400" />
-              {/* Red notification dot */}
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_6px_#f43f5e]" />
-            </button>
-            <span className="absolute left-14 top-1.5 px-2.5 py-1 bg-[#0C1224] border border-pink-500/30 text-pink-300 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
-              WorkVista AI Copilot (Ctrl+K)
-            </span>
-          </div>
-        )}
+      {/* Footer Area: Settings & Profile */}
+      <div className="p-3 border-t border-slate-800/60 space-y-2">
+        {/* Settings button */}
+        <button
+          onClick={() => onSelectTab('settings')}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+            currentTab === 'settings'
+              ? 'bg-[#13233D] text-white font-semibold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+          }`}
+        >
+          <Settings className="w-4 h-4 text-slate-400" />
+          <span>Settings</span>
+        </button>
 
-        {/* Settings Tab */}
-        <div className="relative group">
-          <button
-            onClick={() => onSelectTab('settings')}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-              currentTab === 'settings'
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,240,255,0.35)]'
-                : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-900/80 hover:border hover:border-cyan-500/20'
-            }`}
-            title="Settings"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-          <span className="absolute left-14 top-1.5 px-2.5 py-1 bg-[#0C1224] border border-cyan-500/30 text-slate-200 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
-            System Settings
-          </span>
-        </div>
-
-        {/* User Profile Avatar with Online Ring */}
-        <div className="relative group pt-1">
-          <div 
-            onClick={() => onSelectTab('settings')}
-            className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-900/60 to-slate-900 border border-cyan-500/30 flex items-center justify-center text-cyan-300 text-xs font-mono font-bold cursor-pointer hover:border-cyan-400 transition-all relative"
-            title="Narasimha (Architect)"
-          >
-            NA
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#050811] shadow-[0_0_6px_#10b981]" />
+        {/* Profile Section: Avatar "N" + NARASIMHA / Administrator */}
+        <div 
+          onClick={() => onSelectTab('settings')}
+          className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-800/40 cursor-pointer transition-colors"
+        >
+          <div className="w-7 h-7 rounded-full bg-blue-600/30 border border-blue-500/40 text-blue-300 flex items-center justify-center text-xs font-bold shrink-0">
+            N
           </div>
-          <span className="absolute left-14 bottom-1 px-2.5 py-1 bg-[#0C1224] border border-cyan-500/30 text-slate-200 text-xs font-semibold rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-all duration-150 z-50">
-            Narasimha · Administrator
-          </span>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-white leading-tight truncate">
+              NARASIMHA
+            </div>
+            <div className="text-[10px] text-slate-400 truncate">
+              Administrator
+            </div>
+          </div>
         </div>
       </div>
     </aside>

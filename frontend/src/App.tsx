@@ -121,29 +121,27 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#060913]">
-        {/* Top Navbar for sub-pages (Dashboard has integrated Command Center Header) */}
-        {currentTab !== 'dashboard' && (
-          <Navbar
-            onOpenUpload={() => setIsUploadOpen(true)}
-            onLoadDemo={handleLoadDemo}
-            onExport={() => {
-              api.triggerExportCsv();
-            }}
-            onRefresh={handleRefresh}
-            onOpenSearch={() => setIsSearchOpen(true)}
-            onOpenCopilot={() => handleOpenCopilotWithQuery('')}
-            onOpenScenarioPlanner={() => handleOpenScenarioPlannerWithDept('All')}
-            onOpenCompare={() => setIsCompareOpen(true)}
-            onNavigateToTab={(tab) => setCurrentTab(tab as NavTab)}
-            isRefreshing={isRefreshing}
-            isLoadingDemo={isLoadingDemo}
-            searchQuery={searchQuery}
-            onSearchChange={(q) => {
-              setSearchQuery(q);
-            }}
-          />
-        )}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0B1120]">
+        {/* Top Command Bar matching reference */}
+        <Navbar
+          onOpenUpload={() => setIsUploadOpen(true)}
+          onLoadDemo={handleLoadDemo}
+          onExport={() => {
+            api.triggerExportCsv();
+          }}
+          onRefresh={handleRefresh}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          onOpenCopilot={() => handleOpenCopilotWithQuery('')}
+          onOpenScenarioPlanner={() => handleOpenScenarioPlannerWithDept('All')}
+          onOpenCompare={() => setIsCompareOpen(true)}
+          onNavigateToTab={(tab) => setCurrentTab(tab as NavTab)}
+          isRefreshing={isRefreshing}
+          isLoadingDemo={isLoadingDemo}
+          searchQuery={searchQuery}
+          onSearchChange={(q) => {
+            setSearchQuery(q);
+          }}
+        />
 
         {/* Dynamic Pages */}
         <main className="flex-1 pb-8">
