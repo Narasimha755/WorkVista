@@ -12,6 +12,10 @@ router = APIRouter()
 
 @router.get("/roles")
 def list_roles(status: Optional[str] = None, department: Optional[str] = None, db: Session = Depends(get_db)):
+    if db.query(JobRole).count() == 0:
+        from app.services.demo_generator import seed_recruitment_data
+        seed_recruitment_data(db)
+
     query = db.query(JobRole)
     if status and status != "All":
         query = query.filter(JobRole.status == status)

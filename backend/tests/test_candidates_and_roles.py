@@ -1,7 +1,15 @@
 from fastapi.testclient import TestClient
 from app.main import app
+from app.core.database import SessionLocal
+from app.services.demo_generator import seed_recruitment_data
 
 client = TestClient(app)
+
+_db = SessionLocal()
+try:
+    seed_recruitment_data(_db)
+finally:
+    _db.close()
 
 def test_roles_crud():
     # 1. List roles

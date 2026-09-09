@@ -35,6 +35,10 @@ def list_candidates(
     sort_dir: Optional[str] = "desc",
     db: Session = Depends(get_db)
 ):
+    if db.query(Candidate).count() == 0:
+        from app.services.demo_generator import seed_recruitment_data
+        seed_recruitment_data(db)
+
     query = db.query(Candidate)
 
     if status and status != "All":

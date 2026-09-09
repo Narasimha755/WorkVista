@@ -9,7 +9,7 @@ import pandas as pd
 from app.core.database import get_db
 from app.core.config import UPLOADS_DIR
 from app.services.pipeline_orchestrator import process_and_persist_dataset
-from app.services.demo_generator import generate_demo_dataset
+from app.services.demo_generator import generate_demo_dataset, seed_recruitment_data
 from app.models import DatasetVersion, Dataset, AuditLog
 
 router = APIRouter()
@@ -94,6 +94,7 @@ def load_demo_dataset(db: Session = Depends(get_db)):
             original_name="WorkVista Demo Dataset (520 Employees)",
             db=db
         )
+        seed_recruitment_data(db)
         return {
             "success": True,
             "message": "Realistic demo dataset generated and processed through ML pipeline.",
